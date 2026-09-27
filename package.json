@@ -6,6 +6,7 @@
     "start": "ng serve",
     "build": "ng build",
     "build:gh": "ng build --base-href /thecroppers/",
+    "deploy": "npm run build:gh && gh-pages -d dist/the-croppers/browser --dotfiles",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
   },
@@ -26,6 +27,7 @@
     "@angular/build": "^22.2.0",
     "@angular/cli": "^22.2.0",
     "@angular/compiler-cli": "^22.2.0",
+    "gh-pages": "^6.3.0",
     "jsdom": "^30.0.0",
     "prettier": "^3.8.1",
     "typescript": "~6.0.2",
