@@ -1,0 +1,660 @@
+.booking-header {
+  padding: 64px 0 40px 0;
+  background: radial-gradient(circle at 50% 10%, rgba(197, 168, 128, 0.09) 0%, rgba(14, 14, 17, 0.98) 70%), #0e0e11;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.text-center {
+  text-align: center;
+}
+
+.page-title {
+  font-size: 2.4rem;
+  margin-bottom: 12px;
+}
+
+@media (min-width: 768px) {
+  .page-title {
+    font-size: 3.2rem;
+  }
+}
+
+.page-subtitle {
+  font-size: 1.05rem;
+  color: rgba(255, 255, 255, 0.7);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.booking-wizard-section {
+  padding: 48px 0 80px 0;
+  background: var(--color-bg);
+}
+
+.wizard-container {
+  max-width: 820px;
+}
+
+/* Stepper Bar */
+.wizard-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 48px;
+  position: relative;
+  padding: 0 10px;
+}
+
+.step-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  z-index: 2;
+  position: relative;
+}
+
+.step-num {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-heading);
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--color-muted);
+  transition: all 0.25s ease;
+}
+
+.step-text {
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-muted);
+  transition: color 0.25s ease;
+}
+
+.step-node.active .step-num {
+  border-color: var(--color-gold);
+  background: var(--color-gold);
+  color: #0e0e11;
+  box-shadow: 0 0 16px rgba(197, 168, 128, 0.4);
+}
+
+.step-node.active .step-text {
+  color: var(--color-gold-light);
+}
+
+.step-node.completed .step-num {
+  border-color: var(--color-gold);
+  background: rgba(197, 168, 128, 0.15);
+  color: var(--color-gold);
+}
+
+.step-node.completed .step-text {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.step-connector {
+  flex: 1;
+  height: 2px;
+  background: var(--color-border-subtle);
+  margin: 0 8px 24px 8px;
+  transition: background 0.3s ease;
+}
+
+.step-connector.filled {
+  background: var(--color-gold);
+}
+
+/* Step Panel Common */
+.step-panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 32px 24px;
+}
+
+@media (min-width: 768px) {
+  .step-panel {
+    padding: 44px 40px;
+  }
+}
+
+.step-header {
+  margin-bottom: 32px;
+}
+
+.step-badge {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--color-gold);
+  font-weight: 600;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.step-title {
+  font-size: 1.8rem;
+  margin-bottom: 8px;
+}
+
+.step-desc {
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.step-actions {
+  margin-top: 40px;
+  padding-top: 24px;
+  border-top: 1px solid var(--color-border-subtle);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.step-actions.dual-actions {
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Step 1: Services Grid */
+.services-selection-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+@media (min-width: 640px) {
+  .services-selection-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.service-pick-card {
+  padding: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border-subtle);
+  background: var(--color-bg-alt);
+  transition: all 0.2s ease;
+}
+
+.service-pick-card:hover {
+  border-color: rgba(197, 168, 128, 0.4);
+  background: var(--color-surface);
+}
+
+.service-pick-card.selected {
+  border-color: var(--color-gold);
+  background: rgba(197, 168, 128, 0.08);
+  box-shadow: 0 0 18px rgba(197, 168, 128, 0.12);
+}
+
+.card-radio-indicator {
+  margin-top: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.service-pick-card.selected .card-radio-indicator {
+  border-color: var(--color-gold);
+}
+
+.radio-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--color-gold);
+  opacity: 0;
+  transform: scale(0.4);
+  transition: all 0.2s ease;
+}
+
+.service-pick-card.selected .radio-dot {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.service-pick-card .card-content {
+  flex: 1;
+}
+
+.service-pick-card .service-category {
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-gold);
+  font-weight: 600;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.service-pick-card .service-name {
+  font-size: 1.15rem;
+  margin-bottom: 6px;
+  color: var(--color-light);
+}
+
+.service-pick-card .service-desc {
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 14px;
+}
+
+.service-chips {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.spec-chip {
+  font-size: 0.8rem;
+  color: var(--color-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.price-chip {
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--color-gold-light);
+}
+
+/* Step 2: Date Selector */
+.date-selector-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.quick-days-carousel {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+@media (min-width: 640px) {
+  .quick-days-carousel {
+    grid-template-columns: repeat(7, 1fr);
+  }
+}
+
+.quick-day-btn {
+  background: var(--color-bg-alt);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 8px;
+  padding: 14px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.quick-day-btn:hover {
+  border-color: rgba(197, 168, 128, 0.4);
+}
+
+.quick-day-btn.selected {
+  border-color: var(--color-gold);
+  background: rgba(197, 168, 128, 0.12);
+  box-shadow: 0 0 16px rgba(197, 168, 128, 0.15);
+}
+
+.quick-day-btn .day-name {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  color: var(--color-muted);
+  font-weight: 600;
+}
+
+.quick-day-btn .day-num {
+  font-family: var(--font-heading);
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--color-light);
+}
+
+.quick-day-btn.selected .day-num {
+  color: var(--color-gold-light);
+}
+
+.quick-day-btn .day-month {
+  font-size: 0.7rem;
+  color: var(--color-muted);
+}
+
+.custom-date-input-group {
+  max-width: 280px;
+}
+
+/* Step 3: Slots */
+.period-title {
+  font-size: 1.05rem;
+  margin-bottom: 16px;
+  color: var(--color-gold-light);
+}
+
+.slots-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+@media (min-width: 540px) {
+  .slots-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 768px) {
+  .slots-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.slot-btn {
+  background: var(--color-bg-alt);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 6px;
+  padding: 14px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: var(--font-sans);
+}
+
+.slot-btn.available:hover {
+  border-color: var(--color-gold);
+  background: rgba(197, 168, 128, 0.08);
+}
+
+.slot-btn.selected {
+  border-color: var(--color-gold);
+  background: var(--color-gold);
+}
+
+.slot-btn.selected .slot-time {
+  color: #0e0e11;
+  font-weight: 700;
+}
+
+.slot-btn.selected .slot-status-tag {
+  color: #0e0e11;
+  font-weight: 600;
+}
+
+.slot-btn.unavailable {
+  opacity: 0.35;
+  cursor: not-allowed;
+  border-style: dashed;
+}
+
+.slot-time {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-light);
+}
+
+.slot-status-tag {
+  font-size: 0.7rem;
+  color: var(--color-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.empty-slots-box {
+  padding: 40px;
+  text-align: center;
+  background: var(--color-bg-alt);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+/* Step 4: Customer Details Form */
+.customer-details-form {
+  max-width: 480px;
+}
+
+.phone-input-group {
+  display: flex;
+  align-items: center;
+}
+
+.phone-prefix {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--color-border-subtle);
+  border-right: none;
+  padding: 13px 14px;
+  border-radius: 6px 0 0 6px;
+  color: var(--color-gold-light);
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.phone-input-group .form-control {
+  border-radius: 0 6px 6px 0;
+}
+
+.form-hint {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.4);
+  margin-top: 6px;
+  display: block;
+}
+
+/* Step 5: Summary Card */
+.summary-card {
+  padding: 32px;
+  background: var(--color-bg-alt);
+}
+
+.summary-header {
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--color-border-subtle);
+  padding-bottom: 16px;
+}
+
+.summary-salon-title {
+  font-family: var(--font-heading);
+  font-size: 1.4rem;
+  color: var(--color-gold-light);
+  display: block;
+}
+
+.summary-salon-sub {
+  font-size: 0.85rem;
+  color: var(--color-muted);
+}
+
+.summary-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 28px;
+}
+
+.summary-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.95rem;
+}
+
+.summary-item .item-label {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.summary-item .item-value {
+  color: var(--color-light);
+  font-weight: 500;
+  text-align: right;
+}
+
+.summary-item .item-value.highlight {
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+  color: var(--color-gold-light);
+  font-weight: 700;
+}
+
+.summary-divider {
+  height: 1px;
+  background: var(--color-border-subtle);
+  margin: 8px 0;
+}
+
+.summary-notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: rgba(197, 168, 128, 0.08);
+  border: 1px solid rgba(197, 168, 128, 0.2);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: var(--color-gold-light);
+}
+
+/* Success View */
+.success-card {
+  text-align: center;
+  padding: 56px 32px;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.success-icon-wrap {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: rgba(52, 211, 153, 0.15);
+  border: 2px solid var(--color-success);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 24px auto;
+  color: var(--color-success);
+}
+
+.check-icon {
+  width: 36px;
+  height: 36px;
+}
+
+.success-badge {
+  margin-bottom: 12px;
+}
+
+.success-title {
+  font-size: 2.2rem;
+  margin-bottom: 10px;
+}
+
+.success-subtitle {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.65);
+  margin-bottom: 36px;
+}
+
+.confirmation-details-box {
+  background: var(--color-bg-alt);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 8px;
+  padding: 24px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.92rem;
+}
+
+.detail-row .detail-label {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.detail-row .detail-value {
+  color: var(--color-light);
+  font-weight: 500;
+}
+
+.highlight-ref {
+  border-bottom: 1px solid var(--color-border-subtle);
+  padding-bottom: 10px;
+  margin-bottom: 4px;
+}
+
+.ref-badge {
+  font-family: var(--font-heading);
+  letter-spacing: 0.08em;
+  color: var(--color-gold) !important;
+  font-weight: 700;
+}
+
+.status-booked {
+  text-transform: uppercase;
+  color: var(--color-success) !important;
+  font-weight: 600;
+  font-size: 0.8rem;
+  background: rgba(52, 211, 153, 0.1);
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.salon-arrival-tip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin-bottom: 36px;
+  text-align: left;
+}
+
+.salon-arrival-tip strong {
+  color: var(--color-gold-light);
+}
+
+.success-actions {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}

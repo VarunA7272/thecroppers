@@ -1,0 +1,120 @@
+.admin-wrapper {
+  background: var(--color-bg);
+  min-height: 85vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-nav-bar {
+  background: #111116;
+  border-bottom: 1px solid rgba(197, 168, 128, 0.2);
+  padding: 12px 0;
+  position: sticky;
+  top: 76px;
+  z-index: 900;
+}
+
+.admin-nav-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.admin-brand-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  background: rgba(197, 168, 128, 0.15);
+  border: 1px solid var(--color-gold);
+  color: var(--color-gold-light);
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.admin-badge.staff-badge {
+  background: rgba(52, 211, 153, 0.15);
+  border-color: var(--color-success);
+  color: var(--color-success);
+}
+
+.admin-title {
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.admin-title strong {
+  color: var(--color-light);
+}
+
+.admin-links {
+  display: flex;
+  gap: 20px;
+}
+
+.admin-links a {
+  color: rgba(255, 255, 255, 0.7);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.admin-links a:hover,
+.admin-links a.active {
+  color: var(--color-gold-light);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.admin-user-group {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.admin-user-info {
+  display: none;
+  flex-direction: column;
+  text-align: right;
+}
+
+@media (min-width: 640px) {
+  .admin-user-info {
+    display: flex;
+  }
+}
+
+.user-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-light);
+}
+
+.user-role {
+  font-size: 0.72rem;
+  color: var(--color-muted);
+}
+
+.logout-btn {
+  padding: 6px 14px;
+  font-size: 0.8rem;
+}
+
+.site-link {
+  font-size: 0.8rem;
+  padding: 6px 12px;
+}
+
+.admin-content-area {
+  flex: 1;
+  padding: 36px 0 64px 0;
+}

@@ -1,0 +1,142 @@
+.page-header {
+  padding: 80px 0 50px 0;
+  background: radial-gradient(circle at 50% 10%, rgba(197, 168, 128, 0.09) 0%, rgba(14, 14, 17, 0.98) 70%), #0e0e11;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.text-center {
+  text-align: center;
+}
+
+.page-title {
+  font-size: 2.5rem;
+  margin-bottom: 16px;
+}
+
+@media (min-width: 768px) {
+  .page-title {
+    font-size: 3.5rem;
+  }
+}
+
+.page-subtitle {
+  font-size: 1.15rem;
+  color: rgba(255, 255, 255, 0.7);
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+/* Story Section */
+.story-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 56px;
+}
+
+@media (min-width: 992px) {
+  .story-grid {
+    grid-template-columns: 1.1fr 0.9fr;
+  }
+}
+
+.story-text p {
+  font-size: 1.05rem;
+  line-height: 1.8;
+  margin-bottom: 24px;
+}
+
+.story-quote {
+  margin-top: 32px;
+  padding: 24px 28px;
+  border-left: 3px solid var(--color-gold);
+  background: rgba(197, 168, 128, 0.05);
+  border-radius: 0 8px 8px 0;
+}
+
+.story-quote blockquote {
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+  font-style: italic;
+  color: var(--color-gold-light);
+  line-height: 1.6;
+}
+
+/* Pillars */
+.story-pillars {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.pillar-card {
+  padding: 28px;
+  position: relative;
+}
+
+.pillar-num {
+  font-family: var(--font-heading);
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--color-gold);
+  opacity: 0.8;
+  margin-bottom: 12px;
+}
+
+.pillar-title {
+  font-size: 1.25rem;
+  margin-bottom: 10px;
+}
+
+.pillar-desc {
+  font-size: 0.92rem;
+  line-height: 1.65;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+/* Visit card */
+.visit-card {
+  background: var(--color-bg-alt);
+  padding: 40px;
+}
+
+.visit-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+@media (min-width: 768px) {
+  .visit-grid {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.visit-details {
+  max-width: 620px;
+}
+
+.visit-title {
+  font-size: 1.7rem;
+  margin-bottom: 12px;
+}
+
+.visit-details p {
+  font-size: 0.96rem;
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+.visit-contact-line {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 0.95rem;
+}
+
+.visit-contact-line a {
+  color: var(--color-gold-light);
+  text-decoration: none;
+  font-weight: 600;
+}
