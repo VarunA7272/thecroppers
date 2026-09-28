@@ -79,6 +79,12 @@ export const routes: Routes = [
         title: 'Reports & Exports | The Croppers Admin'
       },
       {
+        path: 'media',
+        canActivate: [superadminGuard],
+        loadComponent: () => import('./features/admin/media/admin-media.component').then(m => m.AdminMediaComponent),
+        title: 'Media & Gallery | The Croppers Admin'
+      },
+      {
         path: 'settings',
         canActivate: [superadminGuard],
         loadComponent: () => import('./features/admin/settings/admin-settings.component').then(m => m.AdminSettingsComponent),

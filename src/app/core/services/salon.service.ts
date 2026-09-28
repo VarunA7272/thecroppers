@@ -53,6 +53,7 @@ export class SalonInfoService {
       description: 'Signature tailored haircut crafted to your facial architecture with neck shave and hot lather rinse.',
       duration_minutes: 30,
       price: 200,
+      image_url: 'https://images.unsplash.com/photo-1622286342621-4bd786c2447c?auto=format&fit=crop&w=600&q=80',
       is_active: true
     },
     {
@@ -64,6 +65,7 @@ export class SalonInfoService {
       description: 'Custom chromatic formulation with premium ammonia-free tones for seamless dimensional depth.',
       duration_minutes: 90,
       price: 800,
+      image_url: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=600&q=80',
       is_active: true
     },
     {
@@ -75,6 +77,7 @@ export class SalonInfoService {
       description: 'Deep restorative keratin & botanical scalp ritual with warm steam and pressure-point massage.',
       duration_minutes: 60,
       price: 600,
+      image_url: 'https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?auto=format&fit=crop&w=600&q=80',
       is_active: true
     },
     {
@@ -86,6 +89,7 @@ export class SalonInfoService {
       description: 'Sculpted line definition, scissor fade, edge detailing, and organic beard oil treatment.',
       duration_minutes: 15,
       price: 100,
+      image_url: 'https://images.unsplash.com/photo-1599351431202-1e0f0137899a?auto=format&fit=crop&w=600&q=80',
       is_active: true
     },
     {
@@ -97,6 +101,7 @@ export class SalonInfoService {
       description: 'Traditional straight razor shave with essential pre-shave oils, hot towel infusion, and soothing balm.',
       duration_minutes: 20,
       price: 100,
+      image_url: 'https://images.unsplash.com/photo-1621605815971-fbc98d665033?auto=format&fit=crop&w=600&q=80',
       is_active: true
     },
     {
@@ -108,6 +113,7 @@ export class SalonInfoService {
       description: 'Complete dermal detox with enzymatic exfoliation, lymphatic drainage, and vitamin infusion.',
       duration_minutes: 60,
       price: 700,
+      image_url: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=600&q=80',
       is_active: true
     },
     {
@@ -119,6 +125,7 @@ export class SalonInfoService {
       description: 'Fast-action pore clarifying cleanse, gentle scrub exfoliation, and cooling botanical mask.',
       duration_minutes: 45,
       price: 400,
+      image_url: 'https://images.unsplash.com/photo-1512290900672-1f41e57c6b96?auto=format&fit=crop&w=600&q=80',
       is_active: true
     }
   ];

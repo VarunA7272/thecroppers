@@ -4,7 +4,7 @@
   min-height: calc(88vh - 76px);
   display: flex;
   align-items: center;
-  padding: 80px 0 60px 0;
+  padding: 60px 0;
   overflow: hidden;
   background: radial-gradient(circle at 80% 30%, rgba(181, 136, 64, 0.12) 0%, rgba(251, 250, 248, 0.98) 70%), #fbfaf8;
   border-bottom: 1px solid var(--color-border);
@@ -22,10 +22,25 @@
 .hero-container {
   position: relative;
   z-index: 2;
+  width: 100%;
+}
+
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 40px;
+  align-items: center;
+}
+
+@media (min-width: 992px) {
+  .hero-grid {
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: 48px;
+  }
 }
 
 .hero-content {
-  max-width: 740px;
+  max-width: 680px;
 }
 
 .hero-badge {
@@ -41,7 +56,7 @@
 
 @media (min-width: 768px) {
   .hero-title {
-    font-size: 4.2rem;
+    font-size: 4rem;
   }
 }
 
@@ -57,7 +72,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 16px;
-  margin-bottom: 56px;
+  margin-bottom: 48px;
 }
 
 .hero-highlights {
@@ -92,6 +107,70 @@
   width: 1px;
   height: 32px;
   background: var(--color-border-subtle);
+}
+
+/* Hero Visual Showcase */
+.hero-visual-showcase {
+  display: flex;
+  justify-content: center;
+}
+
+.hero-img-frame {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  height: 440px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  box-shadow: 0 16px 36px rgba(35, 30, 25, 0.12);
+  background: #ffffff;
+}
+
+@media (min-width: 992px) {
+  .hero-img-frame {
+    height: 520px;
+  }
+}
+
+.hero-main-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hero-img-frame:hover .hero-main-img {
+  transform: scale(1.03);
+}
+
+.hero-img-badge {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  right: 20px;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 8px;
+  border: 1px solid rgba(181, 136, 64, 0.3);
+  box-shadow: 0 4px 16px rgba(35, 30, 25, 0.08);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #1c1917;
+  letter-spacing: 0.04em;
+}
+
+.badge-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-gold);
+  flex-shrink: 0;
 }
 
 /* Why The Croppers */
@@ -271,6 +350,8 @@
   overflow: hidden;
   position: relative;
   box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border-subtle);
+  background: #ffffff;
 }
 
 .gallery-preview-item.item-large {
@@ -286,26 +367,20 @@
 .gallery-preview-card {
   width: 100%;
   height: 100%;
-  background-size: cover;
-  background-position: center;
   position: relative;
+  overflow: hidden;
+}
+
+.gallery-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
   transition: transform 0.5s ease;
+  display: block;
 }
 
-.gallery-preview-item:hover .gallery-preview-card {
-  transform: scale(1.04);
-}
-
-.bg-chair {
-  background: linear-gradient(180deg, rgba(28, 25, 23, 0.15) 0%, rgba(28, 25, 23, 0.78) 100%), #e8e2d8;
-}
-
-.bg-shave {
-  background: linear-gradient(180deg, rgba(28, 25, 23, 0.15) 0%, rgba(28, 25, 23, 0.78) 100%), #ded6c9;
-}
-
-.bg-spa {
-  background: linear-gradient(180deg, rgba(28, 25, 23, 0.15) 0%, rgba(28, 25, 23, 0.78) 100%), #e4ded2;
+.gallery-preview-item:hover .gallery-card-img {
+  transform: scale(1.05);
 }
 
 .gallery-overlay {
@@ -314,6 +389,10 @@
   left: 0;
   right: 0;
   padding: 24px;
+  background: linear-gradient(180deg, transparent 0%, rgba(28, 25, 23, 0.85) 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .gallery-caption {
@@ -321,6 +400,11 @@
   font-size: 1.05rem;
   color: #ffffff;
   font-weight: 600;
+}
+
+.gallery-subcaption {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.75);
 }
 
 .gallery-preview-footer {
@@ -342,7 +426,7 @@
 
 @media (min-width: 900px) {
   .about-snippet-grid {
-    grid-template-columns: 1.2fr 0.8fr;
+    grid-template-columns: 1.1fr 0.9fr;
   }
 }
 
@@ -356,16 +440,42 @@
   margin-top: 28px;
 }
 
+.about-snippet-visual {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.about-img-frame {
+  width: 100%;
+  height: 240px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+}
+
+.about-snippet-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.about-img-frame:hover .about-snippet-img {
+  transform: scale(1.03);
+}
+
 .about-snippet-stats {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
 }
 
 .stat-card {
   background: var(--color-surface);
   border: 1px solid var(--color-border-subtle);
-  padding: 24px;
+  padding: 20px 24px;
   border-radius: 8px;
   box-shadow: var(--shadow-sm);
 }
@@ -376,7 +486,7 @@
   font-size: 1.35rem;
   font-weight: 700;
   color: var(--color-gold-light);
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .stat-label {

@@ -56,6 +56,11 @@ import { CategoryWithServices, SalonService } from '../../core/models/service.mo
                 <div class="services-list-grid">
                   @for (service of catGroup.services; track service.id) {
                     <div class="croppers-card service-item-card">
+                      @if (service.image_url) {
+                        <div class="service-media-thumb">
+                          <img [src]="service.image_url" [alt]="service.name" loading="lazy" />
+                        </div>
+                      }
                       <div class="service-info-col">
                         <div class="service-title-row">
                           <h3 class="service-title">{{ service.name }}</h3>

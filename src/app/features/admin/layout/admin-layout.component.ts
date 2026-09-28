@@ -28,6 +28,7 @@ import { AdminService } from '../../../core/services/admin.service';
             <!-- Superadmin Only Tabs -->
             @if (adminService.isSuperadmin()) {
               <a routerLink="/admin/services" routerLinkActive="active">Services & Pricing</a>
+              <a routerLink="/admin/media" routerLinkActive="active">Media & Photos</a>
               <a routerLink="/admin/staff" routerLinkActive="active">Staff Roster</a>
               <a routerLink="/admin/export" routerLinkActive="active">Reports & Exports</a>
               <a routerLink="/admin/settings" routerLinkActive="active">Salon Settings</a>

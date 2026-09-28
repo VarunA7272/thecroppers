@@ -15,6 +15,7 @@ export interface SalonService {
   description?: string | null;
   duration_minutes: number;
   price: number;
+  image_url?: string | null;
   is_active?: boolean;
 }
 

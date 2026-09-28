@@ -39,6 +39,11 @@ import { SalonService } from '../../../core/models/service.model';
             </div>
 
             <div class="srv-content">
+              @if (srv.image_url) {
+                <div class="srv-thumb">
+                  <img [src]="srv.image_url" [alt]="srv.name" loading="lazy" />
+                </div>
+              }
               <h3 class="srv-name">{{ srv.name }}</h3>
               <p class="srv-desc">{{ srv.description || 'No detailed description.' }}</p>
               
@@ -132,6 +137,22 @@ import { SalonService } from '../../../core/models/service.model';
                   placeholder="Explain what the guest experiences during this treatment..."></textarea>
               </div>
 
+              <div class="form-group">
+                <label class="form-label" for="serviceImage">Service Photo / Thumbnail URL</label>
+                <input 
+                  type="url" 
+                  id="serviceImage" 
+                  formControlName="image_url" 
+                  class="form-control" 
+                  placeholder="https://images.unsplash.com/photo-...">
+                @if (serviceForm.get('image_url')?.value) {
+                  <div class="srv-form-preview">
+                    <img [src]="serviceForm.get('image_url')?.value" alt="Preview" (error)="$any($event.target).style.display='none'" />
+                    <span class="preview-caption">Live Preview</span>
+                  </div>
+                }
+              </div>
+
               <div class="form-group checkbox-group">
                 <label class="checkbox-label">
                   <input type="checkbox" formControlName="is_active">
@@ -190,6 +211,7 @@ export class AdminServicesComponent implements OnInit {
     duration_minutes: [30, [Validators.required]],
     price: [200, [Validators.required, Validators.min(0)]],
     description: [''],
+    image_url: [''],
     is_active: [true]
   });
 
@@ -210,6 +232,7 @@ export class AdminServicesComponent implements OnInit {
       duration_minutes: 30,
       price: 200,
       description: '',
+      image_url: '',
       is_active: true
     });
     this.isModalOpen.set(true);
@@ -223,6 +246,7 @@ export class AdminServicesComponent implements OnInit {
       duration_minutes: srv.duration_minutes,
       price: srv.price,
       description: srv.description || '',
+      image_url: srv.image_url || '',
       is_active: srv.is_active ?? true
     });
     this.isModalOpen.set(true);

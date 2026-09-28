@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { MediaService } from '../../core/services/media.service';
 
 @Component({
   selector: 'app-about',
@@ -33,6 +34,18 @@ import { RouterLink } from '@angular/router';
             <p>
               Whether it is a classic taper fade, dimensional colour processing, or a soothing straight-razor shave, our commitment remains uncompromising craft and personalized distinction.
             </p>
+
+            <!-- Craftsmanship Image Frame -->
+            <div class="story-img-card">
+              <img 
+                [src]="mediaService.aboutImageUrl()" 
+                [alt]="mediaService.aboutImageAlt()" 
+                class="story-main-img" 
+                loading="lazy" />
+              <div class="story-img-caption">
+                Master Stylist Craft & Precision Detailing
+              </div>
+            </div>
 
             <div class="story-quote">
               <blockquote>
@@ -78,17 +91,15 @@ import { RouterLink } from '@angular/router';
                 <span class="section-eyebrow">Visit The Salon</span>
                 <h3 class="visit-title">Located in Jabalpur, Madhya Pradesh</h3>
                 <p>
-                  Conveniently situated in Jabalpur with dedicated client parking nearby. We welcome both pre-booked appointments and walk-ins based on daily capacity.
+                  Conveniently situated in Jabalpur, The Croppers offers tranquil grooming suites with dedicated parking access and welcoming hospitality.
                 </p>
                 <div class="visit-contact-line">
-                  <strong>Direct Inquiries:</strong>
+                  <span>Direct phone:</span>
                   <a href="tel:+917848827245">+91 78488 27245</a>
                 </div>
               </div>
-              <div class="visit-action">
-                <a routerLink="/book" class="btn btn-primary btn-lg">
-                  Book Your Chair
-                </a>
+              <div class="visit-cta">
+                <a routerLink="/book" class="btn btn-primary btn-lg">Schedule An Appointment</a>
               </div>
             </div>
           </div>
@@ -98,4 +109,6 @@ import { RouterLink } from '@angular/router';
   `,
   styleUrl: './about.component.css'
 })
-export class AboutComponent {}
+export class AboutComponent {
+  readonly mediaService = inject(MediaService);
+}

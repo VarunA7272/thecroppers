@@ -2,6 +2,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { RouterLink, Router } from '@angular/router';
 import { SalonInfoService } from '../../core/services/salon.service';
 import { BookingService } from '../../core/services/booking.service';
+import { MediaService } from '../../core/services/media.service';
 import { SalonService } from '../../core/models/service.model';
 
 @Component({
@@ -13,40 +14,57 @@ import { SalonService } from '../../core/models/service.model';
     <section class="hero-section">
       <div class="hero-bg-overlay"></div>
       <div class="container hero-container">
-        <div class="hero-content">
-          <div class="hero-badge">
-            <span class="badge badge-gold">Jabalpur's Signature Salon</span>
-          </div>
-          <h1 class="hero-title">
-            Tailored Elegance.<br>
-            <span class="text-gold-gradient">Master Craft.</span>
-          </h1>
-          <p class="hero-desc">
-            Welcome to The Croppers in Jabalpur. Experience precision cuts, bespoke beard sculpting, and restorative skin treatments in a refined, tranquil atmosphere.
-          </p>
-          <div class="hero-actions">
-            <a routerLink="/book" class="btn btn-primary btn-lg">
-              Book Appointment
-            </a>
-            <a routerLink="/services" class="btn btn-outline btn-lg">
-              Explore Services
-            </a>
+        <div class="hero-grid">
+          <div class="hero-content">
+            <div class="hero-badge">
+              <span class="badge badge-gold">Jabalpur's Signature Salon</span>
+            </div>
+            <h1 class="hero-title">
+              Tailored Elegance.<br>
+              <span class="text-gold-gradient">Master Craft.</span>
+            </h1>
+            <p class="hero-desc">
+              Welcome to The Croppers in Jabalpur. Experience precision cuts, bespoke beard sculpting, and restorative skin treatments in a refined, tranquil atmosphere.
+            </p>
+            <div class="hero-actions">
+              <a routerLink="/book" class="btn btn-primary btn-lg">
+                Book Appointment
+              </a>
+              <a routerLink="/services" class="btn btn-outline btn-lg">
+                Explore Services
+              </a>
+            </div>
+
+            <div class="hero-highlights">
+              <div class="highlight-item">
+                <span class="highlight-val">30-Min</span>
+                <span class="highlight-label">Precision Slots</span>
+              </div>
+              <div class="highlight-divider"></div>
+              <div class="highlight-item">
+                <span class="highlight-val">100%</span>
+                <span class="highlight-label">Hygiene Assured</span>
+              </div>
+              <div class="highlight-divider"></div>
+              <div class="highlight-item">
+                <span class="highlight-val">7 Days</span>
+                <span class="highlight-label">Open Weekly</span>
+              </div>
+            </div>
           </div>
 
-          <div class="hero-highlights">
-            <div class="highlight-item">
-              <span class="highlight-val">30-Min</span>
-              <span class="highlight-label">Precision Slots</span>
-            </div>
-            <div class="highlight-divider"></div>
-            <div class="highlight-item">
-              <span class="highlight-val">100%</span>
-              <span class="highlight-label">Hygiene Assured</span>
-            </div>
-            <div class="highlight-divider"></div>
-            <div class="highlight-item">
-              <span class="highlight-val">7 Days</span>
-              <span class="highlight-label">Open Weekly</span>
+          <!-- Hero Image Showcase -->
+          <div class="hero-visual-showcase">
+            <div class="hero-img-frame">
+              <img 
+                [src]="mediaService.heroImageUrl()" 
+                [alt]="mediaService.heroImageAlt()" 
+                class="hero-main-img" 
+                loading="eager" />
+              <div class="hero-img-badge">
+                <span class="badge-dot"></span>
+                <span>The Croppers Studio Suite</span>
+              </div>
             </div>
           </div>
         </div>
@@ -149,7 +167,7 @@ import { SalonService } from '../../core/models/service.model';
       </div>
     </section>
 
-    <!-- Gallery Preview -->
+    <!-- Gallery Preview with Real Images -->
     <section class="section gallery-preview-section">
       <div class="container">
         <div class="section-header">
@@ -161,27 +179,17 @@ import { SalonService } from '../../core/models/service.model';
         </div>
 
         <div class="gallery-preview-grid">
-          <div class="gallery-preview-item item-large">
-            <div class="gallery-preview-card bg-chair">
-              <div class="gallery-overlay">
-                <span class="gallery-caption">Precision Styling Stations</span>
+          @for (item of previewGalleryItems(); track item.id; let idx = $index) {
+            <div class="gallery-preview-item" [class.item-large]="idx === 0">
+              <div class="gallery-preview-card">
+                <img [src]="item.imageUrl" [alt]="item.title" class="gallery-card-img" loading="lazy" />
+                <div class="gallery-overlay">
+                  <span class="gallery-caption">{{ item.title }}</span>
+                  <span class="gallery-subcaption">{{ item.subtitle }}</span>
+                </div>
               </div>
             </div>
-          </div>
-          <div class="gallery-preview-item">
-            <div class="gallery-preview-card bg-shave">
-              <div class="gallery-overlay">
-                <span class="gallery-caption">Traditional Hot Towel Razor Shaves</span>
-              </div>
-            </div>
-          </div>
-          <div class="gallery-preview-item">
-            <div class="gallery-preview-card bg-spa">
-              <div class="gallery-overlay">
-                <span class="gallery-caption">Deep Conditioning Hair Spa</span>
-              </div>
-            </div>
-          </div>
+          }
         </div>
 
         <div class="gallery-preview-footer">
@@ -207,18 +215,27 @@ import { SalonService } from '../../core/models/service.model';
           </div>
         </div>
 
-        <div class="about-snippet-stats">
-          <div class="stat-card">
-            <span class="stat-num">Asia/Kolkata</span>
-            <span class="stat-label">Local Timezone</span>
+        <div class="about-snippet-visual">
+          <div class="about-img-frame">
+            <img 
+              [src]="mediaService.aboutImageUrl()" 
+              [alt]="mediaService.aboutImageAlt()" 
+              class="about-snippet-img" 
+              loading="lazy" />
           </div>
-          <div class="stat-card">
-            <span class="stat-num">7 Days</span>
-            <span class="stat-label">Convenient Weekday & Weekend Hours</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-num">+91 78488 27245</span>
-            <span class="stat-label">Direct Concierge Line</span>
+          <div class="about-snippet-stats">
+            <div class="stat-card">
+              <span class="stat-num">Asia/Kolkata</span>
+              <span class="stat-label">Local Timezone</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-num">7 Days</span>
+              <span class="stat-label">Convenient Weekday & Weekend Hours</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-num">+91 78488 27245</span>
+              <span class="stat-label">Direct Concierge Line</span>
+            </div>
           </div>
         </div>
       </div>
@@ -247,9 +264,12 @@ import { SalonService } from '../../core/models/service.model';
 export class HomeComponent implements OnInit {
   private readonly salonService = inject(SalonInfoService);
   private readonly bookingService = inject(BookingService);
+  readonly mediaService = inject(MediaService);
   private readonly router = inject(Router);
 
   readonly featuredServices = signal<SalonService[]>([]);
+
+  readonly previewGalleryItems = () => this.mediaService.galleryItems().slice(0, 3);
 
   async ngOnInit(): Promise<void> {
     const all = await this.salonService.getServices();
