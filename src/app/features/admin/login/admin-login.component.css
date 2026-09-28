@@ -194,3 +194,29 @@
 .back-link:hover {
   color: var(--color-gold-light);
 }
+
+/* Mobile Polish */
+@media (max-width: 480px) {
+  .admin-login-wrapper {
+    padding: 20px 12px;
+  }
+
+  .login-card {
+    padding: 28px 18px;
+    border-radius: 12px;
+  }
+
+  .login-title {
+    font-size: 1.5rem;
+  }
+
+  .form-control {
+    font-size: 16px;
+    min-height: 44px;
+  }
+
+  .btn {
+    min-height: 44px;
+  }
+}
+

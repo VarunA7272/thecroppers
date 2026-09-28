@@ -269,3 +269,57 @@
   padding-top: 16px;
   border-top: 1px solid var(--color-border-subtle);
 }
+
+/* Mobile Polish */
+@media (max-width: 640px) {
+  .services-page-container {
+    gap: 20px;
+  }
+
+  .page-header-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+    padding-bottom: 16px;
+  }
+
+  .page-header-row .btn {
+    width: 100%;
+    min-height: 42px;
+    justify-content: center;
+  }
+
+  .page-title {
+    font-size: 1.6rem;
+  }
+
+  .srv-card {
+    padding: 16px;
+  }
+
+  .card-actions .btn {
+    flex: 1;
+    min-height: 40px;
+    justify-content: center;
+  }
+
+  .form-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .modal-card {
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 20px 16px;
+    border-radius: 12px;
+  }
+
+  .modal-card input,
+  .modal-card select,
+  .modal-card textarea {
+    font-size: 16px;
+    min-height: 42px;
+  }
+}
+
