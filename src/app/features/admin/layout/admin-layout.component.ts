@@ -12,11 +12,10 @@ import { AdminService } from '../../../core/services/admin.service';
       <header class="admin-nav-bar">
         <div class="container admin-nav-container">
           <div class="admin-brand-group">
-            <span class="admin-badge" [class.staff-badge]="adminService.isStaff()">
-              {{ adminService.isSuperadmin() ? 'SUPERADMIN' : 'STAFF' }}
-            </span>
+            <span class="admin-logo-mark">TC</span>
             <div class="admin-title">
-              <strong>The Croppers</strong> Jabalpur
+              <strong>The Croppers</strong>
+              <span class="admin-sub">Jabalpur Operations</span>
             </div>
           </div>
 
@@ -35,17 +34,18 @@ import { AdminService } from '../../../core/services/admin.service';
             }
           </nav>
 
+          <!-- Top Right: Admin Badge, User Info, and Sign Out Button -->
           <div class="admin-user-group">
+            <span class="admin-badge" [class.staff-badge]="adminService.isStaff()">
+              {{ adminService.isSuperadmin() ? 'SUPERADMIN' : 'STAFF' }}
+            </span>
             <div class="admin-user-info">
               <span class="user-name">{{ adminService.currentUser()?.name || 'Administrator' }}</span>
-              <span class="user-role">{{ adminService.isSuperadmin() ? 'Superadmin (Full Access)' : 'Stylist / Staff' }}</span>
+              <span class="user-role">{{ adminService.isSuperadmin() ? 'Owner (Full Access)' : 'Stylist / Staff' }}</span>
             </div>
             <button type="button" class="btn btn-outline btn-sm logout-btn" (click)="onLogout()">
               Sign Out
             </button>
-            <a routerLink="/" class="btn btn-ghost btn-sm site-link" title="View Public Salon Website">
-              Public Site ↗
-            </a>
           </div>
         </div>
       </header>

@@ -26,7 +26,23 @@
 .admin-brand-group {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+}
+
+.admin-logo-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-gold) 0%, var(--color-gold-dark) 100%);
+  color: #ffffff;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+  box-shadow: 0 2px 8px rgba(181, 136, 64, 0.25);
 }
 
 .admin-badge {
@@ -36,7 +52,7 @@
   background: rgba(181, 136, 64, 0.12);
   border: 1px solid var(--color-gold);
   color: #8c621d;
-  padding: 3px 8px;
+  padding: 4px 8px;
   border-radius: 4px;
 }
 
@@ -47,23 +63,32 @@
 }
 
 .admin-title {
-  font-size: 0.95rem;
-  color: #57534e;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
 }
 
 .admin-title strong {
+  font-size: 0.95rem;
   color: var(--color-light);
+}
+
+.admin-sub {
+  font-size: 0.7rem;
+  color: var(--color-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .admin-links {
   display: flex;
-  gap: 20px;
+  gap: 16px;
 }
 
 .admin-links a {
   color: #57534e;
   text-decoration: none;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   font-weight: 600;
   padding: 6px 12px;
   border-radius: 4px;
@@ -79,13 +104,14 @@
 .admin-user-group {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
 }
 
 .admin-user-info {
   display: none;
   flex-direction: column;
   text-align: right;
+  line-height: 1.25;
 }
 
 @media (min-width: 640px) {
@@ -108,11 +134,7 @@
 .logout-btn {
   padding: 6px 14px;
   font-size: 0.8rem;
-}
-
-.site-link {
-  font-size: 0.8rem;
-  padding: 6px 12px;
+  font-weight: 600;
 }
 
 .admin-content-area {
