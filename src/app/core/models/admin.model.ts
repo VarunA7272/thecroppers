@@ -16,6 +16,8 @@ export interface StaffMember {
   specialization: 'hair' | 'beard' | 'skin' | 'all';
   phone?: string;
   is_active: boolean;
+  base_salary?: number; // Monthly base salary in INR ₹ (e.g. 25000)
+  incentive_percentage?: number; // Performance incentive rate % (e.g. 15%)
 }
 
 export interface CreateStaffPayload {
@@ -24,6 +26,8 @@ export interface CreateStaffPayload {
   specialization: 'hair' | 'beard' | 'skin' | 'all';
   phone?: string;
   is_active?: boolean;
+  base_salary?: number;
+  incentive_percentage?: number;
 }
 
 export interface UpdateStaffPayload {
@@ -32,6 +36,8 @@ export interface UpdateStaffPayload {
   specialization?: 'hair' | 'beard' | 'skin' | 'all';
   phone?: string;
   is_active?: boolean;
+  base_salary?: number;
+  incentive_percentage?: number;
 }
 
 export interface AppointmentServiceItem {

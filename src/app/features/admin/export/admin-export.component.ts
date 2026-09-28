@@ -6,6 +6,7 @@ import {
   ServiceHistoryRecord,
   StaffAttendanceRecord,
   StaffIncentiveRecord,
+  StaffPayrollRecord,
   ExportDateRange
 } from '../../../core/models/export.model';
 
@@ -20,7 +21,7 @@ import {
         <div>
           <span class="section-eyebrow">Data Intelligence & Reports</span>
           <h1 class="page-title">Reports & Data Export</h1>
-          <p class="page-subtitle">Export salon customers, service history, staff attendance, and incentives as CSV spreadsheets. (Superadmin Only)</p>
+          <p class="page-subtitle">Export salon customers, service history, staff attendance, incentives, and monthly payroll. (Superadmin Only)</p>
         </div>
       </div>
 
@@ -43,12 +44,17 @@ import {
         </div>
         <div class="croppers-card mini-metric">
           <span class="mini-label">Total Incentives</span>
-          <span class="mini-val text-gold">₹{{ totalIncentivesAmount() }}</span>
+          <span class="mini-val text-gold">₹{{ totalIncentivesAmount() | number }}</span>
           <span class="mini-sub">Accrued commissions</span>
+        </div>
+        <div class="croppers-card mini-metric highlight-metric">
+          <span class="mini-label">Net Payroll (Sep)</span>
+          <span class="mini-val text-success">₹{{ totalPayrollNet() | number }}</span>
+          <span class="mini-sub">Base + Comm - Ded</span>
         </div>
       </div>
 
-      <!-- 4 Primary Export Cards Grid -->
+      <!-- 5 Primary Export Cards Grid -->
       <div class="exports-grid">
         <!-- 1. Customers Export -->
         <div class="croppers-card export-card">
@@ -108,9 +114,9 @@ import {
         <div class="croppers-card export-card">
           <div class="export-icon-row">
             <div class="export-icon">💰</div>
-            <span class="badge badge-gold">Payroll Commissions</span>
+            <span class="badge badge-gold">Commissions</span>
           </div>
-          <h3 class="export-title">Staff Incentives & Performance</h3>
+          <h3 class="export-title">Staff Incentives</h3>
           <p class="export-desc">
             Monthly service volume breakdown, commission rates, and calculated incentive amounts (₹) by individual stylist.
           </p>
@@ -119,6 +125,24 @@ import {
           </div>
           <button type="button" class="btn btn-primary btn-block" (click)="downloadIncentivesCsv()">
             Download Incentives CSV
+          </button>
+        </div>
+
+        <!-- 5. Salary & Payroll Sheet Export -->
+        <div class="croppers-card export-card highlight-card">
+          <div class="export-icon-row">
+            <div class="export-icon">💼</div>
+            <span class="badge badge-gold">Full Compensation</span>
+          </div>
+          <h3 class="export-title">Salary & Payroll Sheet</h3>
+          <p class="export-desc">
+            End-to-end payroll sheets combining monthly base salary, earned performance incentives, attendance deductions, and net payout.
+          </p>
+          <div class="card-meta">
+            <span>{{ payrollList().length }} payroll period records ready</span>
+          </div>
+          <button type="button" class="btn btn-primary btn-block" (click)="downloadPayrollCsv()">
+            Download Payroll Sheet CSV
           </button>
         </div>
       </div>
@@ -160,6 +184,13 @@ import {
               [class.active]="selectedTab() === 'incentives'" 
               (click)="selectTab('incentives')">
               Incentives ({{ incentivesList().length }})
+            </button>
+            <button 
+              type="button" 
+              class="preview-tab-btn" 
+              [class.active]="selectedTab() === 'payroll'" 
+              (click)="selectTab('payroll')">
+              Salary & Payroll ({{ payrollList().length }})
             </button>
           </div>
         </div>
@@ -314,6 +345,79 @@ import {
             </table>
           </div>
         }
+
+        <!-- Tab 5: Salary & Payroll Table Preview -->
+        @if (selectedTab() === 'payroll') {
+          <div class="table-responsive">
+            <table class="croppers-table">
+              <thead>
+                <tr>
+                  <th>Staff Member</th>
+                  <th>Role</th>
+                  <th>Month</th>
+                  <th>Base Salary</th>
+                  <th>Services & Revenue</th>
+                  <th>Rate</th>
+                  <th>Incentives Earned</th>
+                  <th>Attendance / Ded.</th>
+                  <th>Bonus</th>
+                  <th>Net Payable</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (p of payrollList(); track p.id) {
+                  <tr>
+                    <td><strong>{{ p.staffName }}</strong></td>
+                    <td class="role-cell">{{ p.role }}</td>
+                    <td>{{ p.period }}</td>
+                    <td class="spend-cell">₹{{ p.baseSalary | number }}</td>
+                    <td>
+                      <div>{{ p.servicesCompleted }} services</div>
+                      <small class="time-sub">₹{{ p.totalServiceRevenue | number }} rev</small>
+                    </td>
+                    <td>{{ p.incentiveRatePercentage }}%</td>
+                    <td class="incentive-highlight">+₹{{ p.incentiveAmount | number }}</td>
+                    <td>
+                      <div>{{ p.attendanceDays }}d present</div>
+                      @if (p.attendanceDeductions > 0) {
+                        <small class="deduction-sub">-₹{{ p.attendanceDeductions | number }}</small>
+                      } @else {
+                        <small class="no-ded-sub">₹0 ded.</small>
+                      }
+                    </td>
+                    <td class="bonus-cell">+₹{{ p.bonusAmount | number }}</td>
+                    <td class="net-payable-cell">
+                      <strong>₹{{ p.netSalaryPayable | number }}</strong>
+                    </td>
+                    <td>
+                      <span class="status-pill" 
+                            [class.pill-completed]="p.payoutStatus === 'Paid'"
+                            [class.pill-approved]="p.payoutStatus === 'Approved'"
+                            [class.pill-booked]="p.payoutStatus === 'Pending'">
+                        {{ p.payoutStatus | uppercase }}
+                      </span>
+                    </td>
+                    <td>
+                      @if (p.payoutStatus === 'Pending') {
+                        <button type="button" class="btn btn-outline btn-xs" (click)="updateStatus(p.id, 'Approved')">
+                          Approve
+                        </button>
+                      } @else if (p.payoutStatus === 'Approved') {
+                        <button type="button" class="btn btn-primary btn-xs" (click)="updateStatus(p.id, 'Paid')">
+                          Mark Paid
+                        </button>
+                      } @else {
+                        <span class="paid-check">✓ Paid</span>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
       </div>
     </div>
   `,
@@ -326,29 +430,47 @@ export class AdminExportComponent implements OnInit {
   readonly serviceHistory = signal<ServiceHistoryRecord[]>([]);
   readonly attendanceList = signal<StaffAttendanceRecord[]>([]);
   readonly incentivesList = signal<StaffIncentiveRecord[]>([]);
+  readonly payrollList = signal<StaffPayrollRecord[]>([]);
 
-  readonly selectedTab = signal<'customers' | 'history' | 'attendance' | 'incentives'>('customers');
+  readonly selectedTab = signal<'customers' | 'history' | 'attendance' | 'incentives' | 'payroll'>('payroll');
 
   readonly totalIncentivesAmount = computed(() =>
     this.incentivesList().reduce((acc, curr) => acc + curr.incentiveAmount, 0)
   );
 
+  readonly totalPayrollNet = computed(() => {
+    const current = this.payrollList().filter(p => p.period === 'September 2026');
+    return current.reduce((acc, curr) => acc + curr.netSalaryPayable, 0);
+  });
+
   async ngOnInit(): Promise<void> {
-    const [c, h, a, inc] = await Promise.all([
+    await this.loadAllData();
+  }
+
+  async loadAllData(): Promise<void> {
+    const [c, h, a, inc, pay] = await Promise.all([
       this.exportService.getCustomersData(),
       this.exportService.getServicesHistory(),
       this.exportService.getStaffAttendance(),
-      this.exportService.getStaffIncentives()
+      this.exportService.getStaffIncentives(),
+      this.exportService.getStaffPayroll()
     ]);
 
     this.customers.set(c);
     this.serviceHistory.set(h);
     this.attendanceList.set(a);
     this.incentivesList.set(inc);
+    this.payrollList.set(pay);
   }
 
-  selectTab(tab: 'customers' | 'history' | 'attendance' | 'incentives'): void {
+  selectTab(tab: 'customers' | 'history' | 'attendance' | 'incentives' | 'payroll'): void {
     this.selectedTab.set(tab);
+  }
+
+  async updateStatus(recordId: string, status: 'Pending' | 'Approved' | 'Paid'): Promise<void> {
+    await this.exportService.updatePayrollStatus(recordId, status);
+    const updated = await this.exportService.getStaffPayroll();
+    this.payrollList.set(updated);
   }
 
   // --- DOWNLOAD ACTIONS ---
@@ -470,4 +592,9 @@ export class AdminExportComponent implements OnInit {
 
     this.exportService.exportToCsv(filename, headers, rows);
   }
+
+  downloadPayrollCsv(): void {
+    this.exportService.exportPayrollCsv(this.payrollList());
+  }
 }
+

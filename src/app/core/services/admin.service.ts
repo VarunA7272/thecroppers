@@ -42,7 +42,9 @@ export class AdminService {
       role: 'Hair Stylist',
       specialization: 'hair',
       phone: '+91 98765 43211',
-      is_active: true
+      is_active: true,
+      base_salary: 25000,
+      incentive_percentage: 15
     },
     {
       id: 'staff-amit',
@@ -51,7 +53,9 @@ export class AdminService {
       role: 'Barber',
       specialization: 'beard',
       phone: '+91 98765 43212',
-      is_active: true
+      is_active: true,
+      base_salary: 22000,
+      incentive_percentage: 12
     },
     {
       id: 'staff-priya',
@@ -60,7 +64,9 @@ export class AdminService {
       role: 'Skin Specialist',
       specialization: 'skin',
       phone: '+91 98765 43213',
-      is_active: true
+      is_active: true,
+      base_salary: 24000,
+      incentive_percentage: 18
     }
   ]);
 
@@ -497,7 +503,9 @@ export class AdminService {
             role: s.role || 'Stylist',
             specialization: s.specialization || 'all',
             phone: s.phone,
-            is_active: s.is_active ?? true
+            is_active: s.is_active ?? true,
+            base_salary: s.base_salary ? Number(s.base_salary) : 22000,
+            incentive_percentage: s.incentive_percentage ? Number(s.incentive_percentage) : 15
           }));
           this.staffStore.set(mapped);
           return mapped;
@@ -510,6 +518,10 @@ export class AdminService {
   }
 
   async addStaff(payload: CreateStaffPayload): Promise<StaffMember> {
+    if (!this.isSuperadmin()) {
+      throw new Error('Unauthorized: Only Superadmin can add new staff members.');
+    }
+
     const newStaff: StaffMember = {
       id: 'staff-' + Math.random().toString(36).substring(2, 9),
       salon_id: this.salonId,
@@ -517,7 +529,9 @@ export class AdminService {
       role: payload.role.trim(),
       specialization: payload.specialization,
       phone: payload.phone?.trim() || '',
-      is_active: payload.is_active ?? true
+      is_active: payload.is_active ?? true,
+      base_salary: payload.base_salary !== undefined ? Number(payload.base_salary) : 22000,
+      incentive_percentage: payload.incentive_percentage !== undefined ? Number(payload.incentive_percentage) : 15
     };
 
     if (this.supabase.isReady && this.supabase.clientInstance) {
@@ -530,7 +544,9 @@ export class AdminService {
             role: newStaff.role,
             specialization: newStaff.specialization,
             phone: newStaff.phone,
-            is_active: newStaff.is_active
+            is_active: newStaff.is_active,
+            base_salary: newStaff.base_salary,
+            incentive_percentage: newStaff.incentive_percentage
           })
           .select()
           .single();
@@ -548,6 +564,10 @@ export class AdminService {
   }
 
   async updateStaff(id: string, payload: UpdateStaffPayload): Promise<StaffMember | null> {
+    if (!this.isSuperadmin()) {
+      throw new Error('Unauthorized: Only Superadmin can modify staff profiles and salaries.');
+    }
+
     let updatedStaff: StaffMember | null = null;
 
     if (this.supabase.isReady && this.supabase.clientInstance) {
@@ -559,7 +579,9 @@ export class AdminService {
             ...(payload.role ? { role: payload.role.trim() } : {}),
             ...(payload.specialization ? { specialization: payload.specialization } : {}),
             ...(payload.phone !== undefined ? { phone: payload.phone.trim() } : {}),
-            ...(payload.is_active !== undefined ? { is_active: payload.is_active } : {})
+            ...(payload.is_active !== undefined ? { is_active: payload.is_active } : {}),
+            ...(payload.base_salary !== undefined ? { base_salary: Number(payload.base_salary) } : {}),
+            ...(payload.incentive_percentage !== undefined ? { incentive_percentage: Number(payload.incentive_percentage) } : {})
           })
           .eq('id', id);
       } catch (err) {
@@ -576,7 +598,9 @@ export class AdminService {
             ...(payload.role ? { role: payload.role.trim() } : {}),
             ...(payload.specialization ? { specialization: payload.specialization } : {}),
             ...(payload.phone !== undefined ? { phone: payload.phone.trim() } : {}),
-            ...(payload.is_active !== undefined ? { is_active: payload.is_active } : {})
+            ...(payload.is_active !== undefined ? { is_active: payload.is_active } : {}),
+            ...(payload.base_salary !== undefined ? { base_salary: Number(payload.base_salary) } : {}),
+            ...(payload.incentive_percentage !== undefined ? { incentive_percentage: Number(payload.incentive_percentage) } : {})
           };
           return updatedStaff;
         }

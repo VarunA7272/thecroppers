@@ -291,3 +291,58 @@
   font-size: 0.8rem;
   color: #78716c;
 }
+
+/* Payroll Specific Styles */
+.highlight-metric {
+  border-left: 3px solid var(--color-success);
+}
+
+.highlight-card {
+  border: 1px solid rgba(181, 136, 64, 0.4);
+  background: linear-gradient(180deg, #ffffff 0%, #faf7f2 100%);
+}
+
+.net-payable-cell {
+  font-family: var(--font-heading);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #15803d;
+}
+
+.deduction-sub {
+  display: block;
+  font-size: 0.75rem;
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+.no-ded-sub {
+  display: block;
+  font-size: 0.75rem;
+  color: #78716c;
+}
+
+.bonus-cell {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #2563eb;
+}
+
+.pill-approved {
+  background: rgba(37, 99, 235, 0.1);
+  color: #2563eb;
+}
+
+.paid-check {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #15803d;
+}
+
+.btn-xs {
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 4px;
+}
+

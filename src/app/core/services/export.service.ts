@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { SupabaseService } from './supabase.service';
 import { AdminService } from './admin.service';
 import {
@@ -6,6 +6,7 @@ import {
   ServiceHistoryRecord,
   StaffAttendanceRecord,
   StaffIncentiveRecord,
+  StaffPayrollRecord,
   ExportDateRange
 } from '../models/export.model';
 import { environment } from '../../../environments/environment';
@@ -424,6 +425,256 @@ export class ExportService {
         status: 'Paid'
       }
     ];
+  }
+
+  // --- SALARY & PAYROLL MANAGEMENT ---
+
+  private readonly payrollStore = signal<StaffPayrollRecord[]>([
+    {
+      id: 'pay-2026-09-rahul',
+      staffId: 'staff-rahul',
+      staffName: 'Rahul',
+      role: 'Hair Stylist',
+      period: 'September 2026',
+      baseSalary: 25000,
+      servicesCompleted: 68,
+      totalServiceRevenue: 34200,
+      incentiveRatePercentage: 15,
+      incentiveAmount: 5130, // 34200 * 0.15
+      attendanceDays: 26,
+      absentDays: 0,
+      attendanceDeductions: 0,
+      bonusAmount: 1000,
+      netSalaryPayable: 31130, // 25000 + 5130 + 1000 - 0
+      payoutStatus: 'Approved',
+      paymentMethod: 'Bank Transfer (NEFT)'
+    },
+    {
+      id: 'pay-2026-09-amit',
+      staffId: 'staff-amit',
+      staffName: 'Amit',
+      role: 'Barber',
+      period: 'September 2026',
+      baseSalary: 22000,
+      servicesCompleted: 92,
+      totalServiceRevenue: 13800,
+      incentiveRatePercentage: 12,
+      incentiveAmount: 1656, // 13800 * 0.12
+      attendanceDays: 25,
+      absentDays: 1,
+      attendanceDeductions: 846, // 1 day deduction (22000/26)
+      bonusAmount: 500,
+      netSalaryPayable: 23310, // 22000 + 1656 + 500 - 846
+      payoutStatus: 'Approved',
+      paymentMethod: 'Bank Transfer (NEFT)'
+    },
+    {
+      id: 'pay-2026-09-priya',
+      staffId: 'staff-priya',
+      staffName: 'Priya',
+      role: 'Skin Specialist',
+      period: 'September 2026',
+      baseSalary: 24000,
+      servicesCompleted: 44,
+      totalServiceRevenue: 28600,
+      incentiveRatePercentage: 18,
+      incentiveAmount: 5148, // 28600 * 0.18
+      attendanceDays: 26,
+      absentDays: 0,
+      attendanceDeductions: 0,
+      bonusAmount: 1200,
+      netSalaryPayable: 30348, // 24000 + 5148 + 1200 - 0
+      payoutStatus: 'Approved',
+      paymentMethod: 'UPI'
+    },
+    {
+      id: 'pay-2026-08-rahul',
+      staffId: 'staff-rahul',
+      staffName: 'Rahul',
+      role: 'Hair Stylist',
+      period: 'August 2026',
+      baseSalary: 25000,
+      servicesCompleted: 74,
+      totalServiceRevenue: 37000,
+      incentiveRatePercentage: 15,
+      incentiveAmount: 5550,
+      attendanceDays: 26,
+      absentDays: 0,
+      attendanceDeductions: 0,
+      bonusAmount: 1000,
+      netSalaryPayable: 31550,
+      payoutStatus: 'Paid',
+      paymentDate: '2026-09-01',
+      paymentMethod: 'Bank Transfer (NEFT)'
+    },
+    {
+      id: 'pay-2026-08-amit',
+      staffId: 'staff-amit',
+      staffName: 'Amit',
+      role: 'Barber',
+      period: 'August 2026',
+      baseSalary: 22000,
+      servicesCompleted: 104,
+      totalServiceRevenue: 15600,
+      incentiveRatePercentage: 12,
+      incentiveAmount: 1872,
+      attendanceDays: 26,
+      absentDays: 0,
+      attendanceDeductions: 0,
+      bonusAmount: 500,
+      netSalaryPayable: 24372,
+      payoutStatus: 'Paid',
+      paymentDate: '2026-09-01',
+      paymentMethod: 'Bank Transfer (NEFT)'
+    },
+    {
+      id: 'pay-2026-08-priya',
+      staffId: 'staff-priya',
+      staffName: 'Priya',
+      role: 'Skin Specialist',
+      period: 'August 2026',
+      baseSalary: 24000,
+      servicesCompleted: 51,
+      totalServiceRevenue: 33150,
+      incentiveRatePercentage: 18,
+      incentiveAmount: 5967,
+      attendanceDays: 26,
+      absentDays: 0,
+      attendanceDeductions: 0,
+      bonusAmount: 1000,
+      netSalaryPayable: 30967,
+      payoutStatus: 'Paid',
+      paymentDate: '2026-09-01',
+      paymentMethod: 'UPI'
+    }
+  ]);
+
+  /**
+   * Retrieves staff payroll records.
+   * Superadmin can view all staff payroll.
+   * Staff can ONLY view their own personal payroll record.
+   */
+  async getStaffPayroll(period?: string): Promise<StaffPayrollRecord[]> {
+    const isSuperadmin = this.adminService.isSuperadmin();
+    const isStaff = this.adminService.isStaff();
+    const currentStaffId = this.adminService.currentStaffId();
+
+    if (!isSuperadmin && !isStaff) {
+      throw new Error('Unauthorized: Authentication required to view payroll records.');
+    }
+
+    let records = this.payrollStore();
+
+    if (period) {
+      records = records.filter(r => r.period === period);
+    }
+
+    if (isStaff) {
+      // Strict role isolation: staff can only see their own records
+      return records.filter(r => r.staffId === currentStaffId);
+    }
+
+    return records;
+  }
+
+  /**
+   * Superadmin updates payout status (Pending -> Approved -> Paid).
+   */
+  async updatePayrollStatus(
+    recordId: string,
+    status: 'Pending' | 'Approved' | 'Paid',
+    paymentMethod?: string
+  ): Promise<boolean> {
+    if (!this.adminService.isSuperadmin()) {
+      throw new Error('Unauthorized: Only Superadmin can approve or disburse staff payroll.');
+    }
+
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    this.payrollStore.update(list =>
+      list.map(r => {
+        if (r.id === recordId) {
+          return {
+            ...r,
+            payoutStatus: status,
+            ...(paymentMethod ? { paymentMethod } : {}),
+            paymentDate: status === 'Paid' ? (r.paymentDate || todayStr) : undefined
+          };
+        }
+        return r;
+      })
+    );
+
+    return true;
+  }
+
+  /**
+   * Helper for staff station dashboard: returns staff's current active monthly compensation record.
+   */
+  async getStaffPersonalSummary(staffId?: string): Promise<StaffPayrollRecord | null> {
+    const targetStaffId = staffId || this.adminService.currentStaffId();
+    if (!targetStaffId) return null;
+
+    const list = this.payrollStore();
+    // Return latest period record (e.g. September 2026)
+    return list.find(r => r.staffId === targetStaffId && r.period === 'September 2026') || null;
+  }
+
+  /**
+   * Generates and triggers download of the official salon payroll spreadsheet.
+   */
+  exportPayrollCsv(records?: StaffPayrollRecord[], filename?: string): void {
+    if (!this.adminService.isSuperadmin()) {
+      throw new Error('Unauthorized: Exporting payroll sheet is strictly restricted to Superadmin.');
+    }
+
+    const payrollList = records || this.payrollStore();
+    const dateStr = new Date().toISOString().split('T')[0];
+    const outFilename = filename || `the_croppers_payroll_${dateStr}.csv`;
+
+    const headers = [
+      'Payroll ID',
+      'Staff ID',
+      'Staff Name',
+      'Role',
+      'Period',
+      'Base Salary (INR)',
+      'Services Count',
+      'Revenue Generated (INR)',
+      'Incentive Rate (%)',
+      'Incentives Earned (INR)',
+      'Attendance (Days)',
+      'Absent Days',
+      'Deductions (INR)',
+      'Bonus (INR)',
+      'Net Salary Payable (INR)',
+      'Payout Status',
+      'Payment Date',
+      'Payment Method'
+    ];
+
+    const rows = payrollList.map(r => [
+      r.id,
+      r.staffId,
+      r.staffName,
+      r.role,
+      r.period,
+      r.baseSalary,
+      r.servicesCompleted,
+      r.totalServiceRevenue,
+      r.incentiveRatePercentage,
+      r.incentiveAmount,
+      r.attendanceDays,
+      r.absentDays,
+      r.attendanceDeductions,
+      r.bonusAmount,
+      r.netSalaryPayable,
+      r.payoutStatus,
+      r.paymentDate || '—',
+      r.paymentMethod || '—'
+    ]);
+
+    this.exportToCsv(outFilename, headers, rows);
   }
 
   // --- CSV GENERATOR & DOWNLOAD TRIGGER ---

@@ -217,4 +217,60 @@ describe('AdminService (Staff vs Superadmin Strict Data Isolation)', () => {
       expect(rahulUpdate).toBe(true);
     });
   });
+
+  describe('Salary and Incentive Configuration', () => {
+    beforeEach(async () => {
+      await service.login('owner@thecroppers.in', 'password123', 'superadmin');
+    });
+
+    it('should initialize staff members with base salary and incentive percentages', async () => {
+      const staffList = await service.getStaffMembers();
+      const rahul = staffList.find(s => s.id === 'staff-rahul')!;
+      const amit = staffList.find(s => s.id === 'staff-amit')!;
+      const priya = staffList.find(s => s.id === 'staff-priya')!;
+
+      expect(rahul.base_salary).toBe(25000);
+      expect(rahul.incentive_percentage).toBe(15);
+
+      expect(amit.base_salary).toBe(22000);
+      expect(amit.incentive_percentage).toBe(12);
+
+      expect(priya.base_salary).toBe(24000);
+      expect(priya.incentive_percentage).toBe(18);
+    });
+
+    it('should allow superadmin to add a new staff member with custom salary and incentive rate', async () => {
+      const newStaff = await service.addStaff({
+        name: 'Vikas',
+        role: 'Junior Stylist',
+        specialization: 'hair',
+        phone: '+91 98765 00000',
+        base_salary: 18000,
+        incentive_percentage: 10
+      });
+
+      expect(newStaff.id).toBeTruthy();
+      expect(newStaff.name).toBe('Vikas');
+      expect(newStaff.base_salary).toBe(18000);
+      expect(newStaff.incentive_percentage).toBe(10);
+    });
+
+    it('should allow superadmin to update an existing staff member salary and commission', async () => {
+      const updated = await service.updateStaff('staff-amit', {
+        base_salary: 24000,
+        incentive_percentage: 14
+      });
+
+      expect(updated?.base_salary).toBe(24000);
+      expect(updated?.incentive_percentage).toBe(14);
+    });
+
+    it('should reject non-superadmin attempts to modify staff profiles or salaries', async () => {
+      await service.login('rahul@thecroppers.in', 'password123', 'staff', 'staff-rahul');
+      await expect(
+        service.updateStaff('staff-rahul', { base_salary: 50000 })
+      ).rejects.toThrow(/Unauthorized/);
+    });
+  });
 });
+

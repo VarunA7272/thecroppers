@@ -2,7 +2,9 @@ import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AdminService } from '../../../core/services/admin.service';
+import { ExportService } from '../../../core/services/export.service';
 import { AdminAppointment, StaffMember } from '../../../core/models/admin.model';
+import { StaffPayrollRecord } from '../../../core/models/export.model';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -215,6 +217,30 @@ import { AdminAppointment, StaffMember } from '../../../core/models/admin.model'
                 <li>Click <strong>"✓ Mark Completed"</strong> on your queue when finished to record completion.</li>
               </ul>
             </div>
+
+            <!-- Staff Personal Earnings Summary -->
+            <div class="station-earnings-box">
+              <div class="card-head" style="margin-bottom: 8px;">
+                <span class="guidance-title">My Earnings (Sep 2026):</span>
+                <span class="status-pill" [class.pill-completed]="staffPayrollSummary()?.payoutStatus === 'Paid' || staffPayrollSummary()?.payoutStatus === 'Approved'">
+                  {{ staffPayrollSummary()?.payoutStatus || 'Calculating' }}
+                </span>
+              </div>
+              <div class="earnings-grid">
+                <div class="earnings-col">
+                  <span class="earnings-sub">Base Salary</span>
+                  <strong class="earnings-num">₹{{ staffBaseSalary() | number }}</strong>
+                </div>
+                <div class="earnings-col">
+                  <span class="earnings-sub">Incentives ({{ staffIncentiveRate() }}%)</span>
+                  <strong class="earnings-num text-gold">+₹{{ staffIncentiveEarned() | number }}</strong>
+                </div>
+                <div class="earnings-col total-col">
+                  <span class="earnings-sub">Net Estimated Payout</span>
+                  <strong class="earnings-num text-success">₹{{ staffNetPayout() | number }}</strong>
+                </div>
+              </div>
+            </div>
           </div>
         }
 
@@ -285,9 +311,11 @@ import { AdminAppointment, StaffMember } from '../../../core/models/admin.model'
 })
 export class AdminDashboardComponent implements OnInit {
   readonly adminService = inject(AdminService);
+  private readonly exportService = inject(ExportService);
 
   readonly staffList = signal<StaffMember[]>([]);
   readonly todayAppointments = signal<AdminAppointment[]>([]);
+  readonly staffPayrollSummary = signal<StaffPayrollRecord | null>(null);
   readonly actionFeedback = signal<string | null>(null);
 
   // Superadmin Metrics
@@ -328,6 +356,22 @@ export class AdminDashboardComponent implements OnInit {
     return this.todayAppointments().reduce((sum, apt) => sum + (apt.service.price || 0), 0);
   });
 
+  readonly staffBaseSalary = computed(() => 
+    this.staffPayrollSummary()?.baseSalary ?? (this.currentStaffMember()?.base_salary || 22000)
+  );
+
+  readonly staffIncentiveRate = computed(() => 
+    this.staffPayrollSummary()?.incentiveRatePercentage ?? (this.currentStaffMember()?.incentive_percentage || 15)
+  );
+
+  readonly staffIncentiveEarned = computed(() => 
+    this.staffPayrollSummary()?.incentiveAmount ?? 0
+  );
+
+  readonly staffNetPayout = computed(() => 
+    this.staffPayrollSummary()?.netSalaryPayable ?? this.staffBaseSalary()
+  );
+
   readonly nextClientAppointment = computed(() => {
     const booked = this.todayAppointments().filter(a => a.status === 'booked');
     if (booked.length === 0) return null;
@@ -350,13 +394,20 @@ export class AdminDashboardComponent implements OnInit {
 
   async loadData(): Promise<void> {
     const todayStr = new Date().toISOString().split('T')[0];
-    const [staff, appointments] = await Promise.all([
+    const isStaff = this.adminService.isStaff();
+    const currentStaffId = this.adminService.currentStaffId();
+
+    const [staff, appointments, summary] = await Promise.all([
       this.adminService.getStaffMembers(),
-      this.adminService.getAppointments({ date: todayStr })
+      this.adminService.getAppointments({ date: todayStr }),
+      isStaff && currentStaffId ? this.exportService.getStaffPersonalSummary(currentStaffId) : Promise.resolve(null)
     ]);
 
     this.staffList.set(staff);
     this.todayAppointments.set(appointments);
+    if (summary) {
+      this.staffPayrollSummary.set(summary);
+    }
   }
 
   async onCompleteAppointment(appointmentId: string, customerName: string): Promise<void> {

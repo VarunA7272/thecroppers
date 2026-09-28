@@ -410,3 +410,50 @@
   background: #15803d;
   transform: translateY(-1px);
 }
+
+/* Staff Station Personal Earnings Summary Box */
+.station-earnings-box {
+  background: #fdfbf7;
+  border: 1px solid rgba(181, 136, 64, 0.25);
+  border-radius: 6px;
+  padding: 16px;
+  margin-top: 14px;
+}
+
+.earnings-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.earnings-col {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px;
+  background: #ffffff;
+  border-radius: 4px;
+  border: 1px solid rgba(28, 25, 23, 0.06);
+}
+
+.earnings-col.total-col {
+  background: #f0fdf4;
+  border-color: rgba(22, 101, 52, 0.2);
+}
+
+.earnings-sub {
+  font-size: 0.68rem;
+  color: var(--color-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.earnings-num {
+  font-family: var(--font-heading);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-light);
+}
+

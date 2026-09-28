@@ -50,6 +50,10 @@ import { StaffMember } from '../../../core/models/admin.model';
               <div class="spec-pill-group">
                 <span class="spec-pill">{{ staff.specialization | uppercase }} SPECIALIST</span>
               </div>
+              <div class="staff-salary-badge">
+                <span class="salary-tag">₹{{ (staff.base_salary || 22000) | number }}/mo</span>
+                <span class="incentive-tag">{{ staff.incentive_percentage || 15 }}% Commission</span>
+              </div>
               <div class="staff-phone">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
                   <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
@@ -98,6 +102,32 @@ import { StaffMember } from '../../../core/models/admin.model';
                   formControlName="role" 
                   class="form-control" 
                   placeholder="e.g. Master Stylist, Senior Barber">
+              </div>
+
+              <div class="form-row">
+                <div class="form-group col-half">
+                  <label class="form-label" for="staffBaseSalary">Monthly Base Salary (₹) *</label>
+                  <input 
+                    type="number" 
+                    id="staffBaseSalary" 
+                    formControlName="base_salary" 
+                    class="form-control" 
+                    min="0" 
+                    step="500" 
+                    placeholder="25000">
+                </div>
+                <div class="form-group col-half">
+                  <label class="form-label" for="staffIncentive">Incentive Commission (%) *</label>
+                  <input 
+                    type="number" 
+                    id="staffIncentive" 
+                    formControlName="incentive_percentage" 
+                    class="form-control" 
+                    min="0" 
+                    max="100" 
+                    step="1" 
+                    placeholder="15">
+                </div>
               </div>
 
               <div class="form-group">
@@ -177,7 +207,9 @@ export class AdminStaffComponent implements OnInit {
     role: ['', [Validators.required]],
     specialization: ['hair', [Validators.required]],
     phone: [''],
-    is_active: [true]
+    is_active: [true],
+    base_salary: [22000, [Validators.required, Validators.min(0)]],
+    incentive_percentage: [15, [Validators.required, Validators.min(0), Validators.max(100)]]
   });
 
   async ngOnInit(): Promise<void> {
@@ -196,7 +228,9 @@ export class AdminStaffComponent implements OnInit {
       role: '',
       specialization: 'hair',
       phone: '',
-      is_active: true
+      is_active: true,
+      base_salary: 22000,
+      incentive_percentage: 15
     });
     this.isModalOpen.set(true);
   }
@@ -208,7 +242,9 @@ export class AdminStaffComponent implements OnInit {
       role: staff.role,
       specialization: staff.specialization,
       phone: staff.phone || '',
-      is_active: staff.is_active
+      is_active: staff.is_active,
+      base_salary: staff.base_salary ?? 22000,
+      incentive_percentage: staff.incentive_percentage ?? 15
     });
     this.isModalOpen.set(true);
   }
