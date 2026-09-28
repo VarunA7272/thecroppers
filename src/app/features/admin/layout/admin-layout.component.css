@@ -1,6 +1,6 @@
 .admin-wrapper {
   background: var(--color-bg);
-  min-height: 85vh;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
 }
@@ -10,7 +10,8 @@
   border-bottom: 1px solid rgba(181, 136, 64, 0.2);
   box-shadow: 0 1px 4px rgba(35, 30, 25, 0.04);
   padding: 12px 0;
-  top: 76px;
+  position: sticky;
+  top: 0;
   z-index: 900;
 }
 

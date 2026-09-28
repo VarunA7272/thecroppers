@@ -1,5 +1,6 @@
-<app-header></app-header>
-<main class="site-main" id="main-content">
+<app-header *ngIf="showAppHeaderFooter"></app-header>
+<main class="site-main" id="main-content" [class.admin-layout]="!showAppHeaderFooter">
   <router-outlet></router-outlet>
 </main>
-<app-footer></app-footer>
+<app-footer *ngIf="showAppHeaderFooter"></app-footer>
+
