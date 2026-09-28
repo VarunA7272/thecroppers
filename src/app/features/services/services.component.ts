@@ -3,16 +3,17 @@ import { Router } from '@angular/router';
 import { SalonInfoService } from '../../core/services/salon.service';
 import { BookingService } from '../../core/services/booking.service';
 import { CategoryWithServices, SalonService } from '../../core/models/service.model';
+import { ScrollRevealDirective } from '../../core/directives/scroll-reveal.directive';
 
 @Component({
   selector: 'app-services',
   standalone: true,
-  imports: [],
+  imports: [ScrollRevealDirective],
   template: `
     <div class="page-container">
       <!-- Header -->
       <section class="page-header">
-        <div class="container text-center">
+        <div class="container text-center" appScrollReveal revealAnimation="fade-up">
           <span class="section-eyebrow">Menu & Pricing</span>
           <h1 class="page-title">Curated Salon Services</h1>
           <p class="page-subtitle">
@@ -24,7 +25,7 @@ import { CategoryWithServices, SalonService } from '../../core/models/service.mo
       <!-- Category Filter Tabs / Jump Links -->
       <section class="tabs-section">
         <div class="container">
-          <div class="category-tabs">
+          <div class="category-tabs" appScrollReveal revealAnimation="fade-in">
             @for (catGroup of categoriesWithServices(); track catGroup.category.id) {
               <a [href]="'#' + catGroup.category.name.toLowerCase()" class="cat-tab-btn">
                 {{ catGroup.category.name }}
@@ -45,7 +46,7 @@ import { CategoryWithServices, SalonService } from '../../core/models/service.mo
           } @else {
             @for (catGroup of categoriesWithServices(); track catGroup.category.id) {
               <div [id]="catGroup.category.name.toLowerCase()" class="category-group-block">
-                <div class="cat-header">
+                <div class="cat-header" appScrollReveal revealAnimation="fade-up">
                   <span class="section-eyebrow">{{ catGroup.category.name }} Care</span>
                   <h2 class="cat-title">{{ catGroup.category.name }}</h2>
                   @if (catGroup.category.description) {
@@ -54,8 +55,8 @@ import { CategoryWithServices, SalonService } from '../../core/models/service.mo
                 </div>
 
                 <div class="services-list-grid">
-                  @for (service of catGroup.services; track service.id) {
-                    <div class="croppers-card service-item-card">
+                  @for (service of catGroup.services; track service.id; let idx = $index) {
+                    <div class="croppers-card service-item-card" appScrollReveal revealAnimation="fade-up" [revealDelay]="(idx % 4) * 80">
                       @if (service.image_url) {
                         <div class="service-media-thumb">
                           <img [src]="service.image_url" [alt]="service.name" loading="lazy" />

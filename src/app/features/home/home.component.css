@@ -19,6 +19,27 @@
   pointer-events: none;
 }
 
+.hero-glow-1 {
+  top: -80px;
+  right: -60px;
+  opacity: 0.85;
+  animation: float-ambient 9s ease-in-out infinite alternate;
+}
+
+.hero-glow-2 {
+  bottom: -120px;
+  left: -80px;
+  opacity: 0.65;
+  width: 500px;
+  height: 500px;
+  animation: float-ambient 12s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes float-ambient {
+  0% { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(24px, 20px) scale(1.08); }
+}
+
 .hero-container {
   position: relative;
   z-index: 2;

@@ -1,16 +1,17 @@
 import { Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MediaService } from '../../core/services/media.service';
+import { ScrollRevealDirective } from '../../core/directives/scroll-reveal.directive';
 
 @Component({
   selector: 'app-about',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, ScrollRevealDirective],
   template: `
     <div class="page-container">
       <!-- Page Hero Header -->
       <section class="page-header">
-        <div class="container text-center">
+        <div class="container text-center" appScrollReveal revealAnimation="fade-up">
           <span class="section-eyebrow">Our Ethos & Origin</span>
           <h1 class="page-title">The Story of The Croppers</h1>
           <p class="page-subtitle">
@@ -22,7 +23,7 @@ import { MediaService } from '../../core/services/media.service';
       <!-- Main Story Section -->
       <section class="section story-section">
         <div class="container story-grid">
-          <div class="story-text">
+          <div class="story-text" appScrollReveal revealAnimation="fade-up">
             <span class="section-eyebrow">A Vision for Jabalpur</span>
             <h2 class="section-title">The Art of Deliberate Grooming</h2>
             <p>
@@ -36,7 +37,7 @@ import { MediaService } from '../../core/services/media.service';
             </p>
 
             <!-- Craftsmanship Image Frame -->
-            <div class="story-img-card">
+            <div class="story-img-card" appScrollReveal revealAnimation="zoom-in" [revealDelay]="150">
               <img 
                 [src]="mediaService.aboutImageUrl()" 
                 [alt]="mediaService.aboutImageAlt()" 
@@ -55,7 +56,7 @@ import { MediaService } from '../../core/services/media.service';
           </div>
 
           <div class="story-pillars">
-            <div class="croppers-card pillar-card">
+            <div class="croppers-card pillar-card" appScrollReveal revealAnimation="fade-up" [revealDelay]="80">
               <div class="pillar-num">01</div>
               <h3 class="pillar-title">Disciplined Hygiene</h3>
               <p class="pillar-desc">
@@ -63,7 +64,7 @@ import { MediaService } from '../../core/services/media.service';
               </p>
             </div>
 
-            <div class="croppers-card pillar-card">
+            <div class="croppers-card pillar-card" appScrollReveal revealAnimation="fade-up" [revealDelay]="160">
               <div class="pillar-num">02</div>
               <h3 class="pillar-title">Honest Consultation</h3>
               <p class="pillar-desc">
@@ -71,7 +72,7 @@ import { MediaService } from '../../core/services/media.service';
               </p>
             </div>
 
-            <div class="croppers-card pillar-card">
+            <div class="croppers-card pillar-card" appScrollReveal revealAnimation="fade-up" [revealDelay]="240">
               <div class="pillar-num">03</div>
               <h3 class="pillar-title">Protected Time</h3>
               <p class="pillar-desc">
@@ -85,7 +86,7 @@ import { MediaService } from '../../core/services/media.service';
       <!-- Location Context & Visiting Us -->
       <section class="section info-section">
         <div class="container">
-          <div class="croppers-card visit-card">
+          <div class="croppers-card visit-card" appScrollReveal revealAnimation="fade-up">
             <div class="visit-grid">
               <div class="visit-details">
                 <span class="section-eyebrow">Visit The Salon</span>

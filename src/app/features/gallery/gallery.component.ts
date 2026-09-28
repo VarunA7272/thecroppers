@@ -3,15 +3,16 @@ import { RouterLink } from '@angular/router';
 import { UpperCasePipe } from '@angular/common';
 import { MediaService } from '../../core/services/media.service';
 import { GalleryImageItem } from '../../core/models/media.model';
+import { ScrollRevealDirective } from '../../core/directives/scroll-reveal.directive';
 
 @Component({
   selector: 'app-gallery',
   standalone: true,
-  imports: [RouterLink, UpperCasePipe],
+  imports: [RouterLink, UpperCasePipe, ScrollRevealDirective],
   template: `
     <div class="page-container">
       <section class="page-header">
-        <div class="container text-center">
+        <div class="container text-center" appScrollReveal revealAnimation="fade-up">
           <span class="section-eyebrow">Visual Lookbook</span>
           <h1 class="page-title">The Gallery</h1>
           <p class="page-subtitle">
@@ -23,7 +24,7 @@ import { GalleryImageItem } from '../../core/models/media.model';
       <!-- Category Filter -->
       <section class="gallery-filter-section">
         <div class="container">
-          <div class="filter-pills">
+          <div class="filter-pills" appScrollReveal revealAnimation="fade-in">
             <button 
               type="button" 
               class="filter-pill" 
@@ -67,8 +68,13 @@ import { GalleryImageItem } from '../../core/models/media.model';
       <section class="section gallery-grid-section">
         <div class="container">
           <div class="masonry-grid">
-            @for (item of filteredItems(); track item.id) {
-              <div class="gallery-card" [class]="item.aspectClass">
+            @for (item of filteredItems(); track item.id; let idx = $index) {
+              <div 
+                class="gallery-card" 
+                [class]="item.aspectClass"
+                appScrollReveal 
+                revealAnimation="fade-up" 
+                [revealDelay]="(idx % 6) * 80">
                 <div class="card-visual">
                   <img [src]="item.imageUrl" [alt]="item.title" class="gallery-img" loading="lazy" />
                   <div class="artistic-motif">
