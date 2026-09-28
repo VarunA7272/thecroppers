@@ -108,6 +108,34 @@
   margin-left: auto;
 }
 
+.superadmin-filters {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.staff-filter-select {
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  border-radius: 6px;
+  border: 1px solid rgba(28, 25, 23, 0.15);
+  background: #ffffff;
+  color: var(--color-light);
+  cursor: pointer;
+}
+
+.staff-scope-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: rgba(181, 136, 64, 0.1);
+  border: 1px solid rgba(181, 136, 64, 0.25);
+  border-radius: 20px;
+  font-size: 0.82rem;
+  color: #8c621d;
+}
+
 .toggle-label {
   display: inline-flex;
   align-items: center;

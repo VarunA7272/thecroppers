@@ -306,3 +306,107 @@
   text-align: center;
   padding: 24px 0;
 }
+
+/* Staff Personal Station Styles */
+.next-slot-value {
+  font-size: 1.8rem;
+  color: var(--color-gold-light);
+}
+
+.station-profile-box {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: #fbfaf8;
+  border: 1px solid rgba(28, 25, 23, 0.08);
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.station-avatar-lg {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--color-gold);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-family: var(--font-heading);
+}
+
+.station-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.station-staff-name {
+  font-size: 1.1rem;
+  color: var(--color-light);
+}
+
+.station-specialization {
+  font-size: 0.8rem;
+  color: var(--color-gold-light);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.station-phone {
+  font-size: 0.8rem;
+  color: var(--color-muted);
+}
+
+.station-guidance-box {
+  padding: 16px;
+  background: rgba(181, 136, 64, 0.06);
+  border: 1px solid rgba(181, 136, 64, 0.2);
+  border-radius: 8px;
+}
+
+.guidance-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #8c621d;
+  margin-bottom: 8px;
+}
+
+.guidance-list {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 0.82rem;
+  color: #57534e;
+  line-height: 1.5;
+}
+
+.guidance-list li {
+  margin-bottom: 6px;
+}
+
+.guidance-list li:last-child {
+  margin-bottom: 0;
+}
+
+.complete-action-btn {
+  background: var(--color-success);
+  color: #ffffff;
+  border: none;
+  font-size: 0.78rem;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.complete-action-btn:hover {
+  background: #15803d;
+  transform: translateY(-1px);
+}

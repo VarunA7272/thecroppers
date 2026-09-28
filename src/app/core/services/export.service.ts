@@ -22,6 +22,10 @@ export class ExportService {
   // --- DATA RETRIEVAL ---
 
   async getCustomersData(): Promise<CustomerExportRecord[]> {
+    if (!this.adminService.isSuperadmin()) {
+      throw new Error('Unauthorized: Data exports are strictly restricted to Superadmin.');
+    }
+
     if (this.supabase.isReady && this.supabase.clientInstance) {
       try {
         const { data, error } = await this.supabase.clientInstance
@@ -130,6 +134,10 @@ export class ExportService {
   }
 
   async getServicesHistory(range?: ExportDateRange): Promise<ServiceHistoryRecord[]> {
+    if (!this.adminService.isSuperadmin()) {
+      throw new Error('Unauthorized: Data exports are strictly restricted to Superadmin.');
+    }
+
     const apts = await this.adminService.getAppointments();
 
     return apts.map(a => {
@@ -151,6 +159,10 @@ export class ExportService {
   }
 
   async getStaffAttendance(range?: ExportDateRange): Promise<StaffAttendanceRecord[]> {
+    if (!this.adminService.isSuperadmin()) {
+      throw new Error('Unauthorized: Data exports are strictly restricted to Superadmin.');
+    }
+
     if (this.supabase.isReady && this.supabase.clientInstance) {
       try {
         const { data, error } = await this.supabase.clientInstance
@@ -305,6 +317,10 @@ export class ExportService {
   }
 
   async getStaffIncentives(range?: ExportDateRange): Promise<StaffIncentiveRecord[]> {
+    if (!this.adminService.isSuperadmin()) {
+      throw new Error('Unauthorized: Data exports are strictly restricted to Superadmin.');
+    }
+
     if (this.supabase.isReady && this.supabase.clientInstance) {
       try {
         const { data, error } = await this.supabase.clientInstance

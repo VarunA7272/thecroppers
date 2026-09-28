@@ -14,12 +14,16 @@ import { SalonService } from '../../../core/models/service.model';
       <!-- Title & Action Bar -->
       <div class="page-title-row">
         <div>
-          <span class="section-eyebrow">Appointment Dispatch</span>
-          <h1 class="page-title">Manage Appointments</h1>
+          <span class="section-eyebrow">
+            {{ adminService.isSuperadmin() ? 'Appointment Dispatch' : 'Station Schedule' }}
+          </span>
+          <h1 class="page-title">
+            {{ adminService.isSuperadmin() ? 'Manage Appointments' : 'My Assigned Appointments' }}
+          </h1>
           <p class="page-subtitle">
             {{ adminService.isSuperadmin() 
               ? 'Superadmin View: Full assignment, walk-in creation, editing, and status management.' 
-              : 'Staff View: Floor queue & status updating for assigned clients.' }}
+              : 'Staff View: Floor queue & status updating for your personal clients (Logged in: ' + currentStaffName() + ').' }}
           </p>
         </div>
 
@@ -119,21 +123,26 @@ import { SalonService } from '../../../core/models/service.model';
           <!-- Staff Specific / Unassigned Toggle -->
           <div class="filter-group toggle-group">
             @if (adminService.isSuperadmin()) {
-              <label class="toggle-label">
-                <input 
-                  type="checkbox" 
-                  [checked]="unassignedOnly()" 
-                  (change)="toggleUnassigned($event)">
-                <span class="toggle-text">Needs Stylist Assignment</span>
-              </label>
+              <div class="superadmin-filters">
+                <label class="toggle-label">
+                  <input 
+                    type="checkbox" 
+                    [checked]="unassignedOnly()" 
+                    (change)="toggleUnassigned($event)">
+                  <span class="toggle-text">Needs Stylist</span>
+                </label>
+                <select class="form-control staff-filter-select" (change)="onStaffFilterChange($event)" [value]="selectedStaffId()">
+                  <option value="">All Stylists</option>
+                  @for (s of staffList(); track s.id) {
+                    <option [value]="s.id">{{ s.name }} ({{ s.role }})</option>
+                  }
+                </select>
+              </div>
             } @else {
-              <label class="toggle-label">
-                <input 
-                  type="checkbox" 
-                  [checked]="myAssignedOnly()" 
-                  (change)="toggleMyAssigned($event)">
-                <span class="toggle-text">My Assigned Appointments Only</span>
-              </label>
+              <div class="staff-scope-pill">
+                <span class="lock-icon">🔒</span>
+                <span>Personal Station: <strong>{{ currentStaffName() }}</strong></span>
+              </div>
             }
           </div>
         </div>
@@ -211,7 +220,9 @@ import { SalonService } from '../../../core/models/service.model';
                     <div class="assigned-staff-info">
                       <div class="staff-badge">
                         <span class="stylist-icon">✂</span>
-                        <strong>{{ apt.assignedStaff[0].name }}</strong>
+                        <strong>
+                          {{ adminService.isStaff() ? 'Assigned to You (' + apt.assignedStaff[0].name + ')' : apt.assignedStaff[0].name }}
+                        </strong>
                         <span class="staff-role-sub">({{ apt.assignedStaff[0].role }})</span>
                       </div>
                       
@@ -254,13 +265,15 @@ import { SalonService } from '../../../core/models/service.model';
                       (click)="updateStatus(apt, 'completed')">
                       ✓ Complete
                     </button>
-                    <button 
-                      type="button" 
-                      class="btn btn-ghost btn-sm cancel-btn" 
-                      title="Cancel Appointment"
-                      (click)="updateStatus(apt, 'cancelled')">
-                      Cancel
-                    </button>
+                    @if (adminService.isSuperadmin()) {
+                      <button 
+                        type="button" 
+                        class="btn btn-ghost btn-sm cancel-btn" 
+                        title="Cancel Appointment"
+                        (click)="updateStatus(apt, 'cancelled')">
+                        Cancel
+                      </button>
+                    }
                     <button 
                       type="button" 
                       class="btn btn-ghost btn-sm noshow-btn" 
@@ -506,7 +519,16 @@ export class AdminAppointmentsComponent implements OnInit {
   readonly selectedCustomDate = signal<string>(new Date().toISOString().split('T')[0]);
   readonly selectedStatus = signal<'all' | 'booked' | 'completed' | 'cancelled' | 'no_show'>('all');
   readonly unassignedOnly = signal<boolean>(false);
-  readonly myAssignedOnly = signal<boolean>(false);
+  readonly selectedStaffId = signal<string>('');
+
+  readonly currentStaffMember = computed(() => {
+    const staffId = this.adminService.currentStaffId();
+    return this.staffList().find(s => s.id === staffId);
+  });
+
+  readonly currentStaffName = computed(() => {
+    return this.currentStaffMember()?.name || this.adminService.currentUser()?.name || 'Stylist';
+  });
 
   readonly activeModalAppointment = signal<AdminAppointment | null>(null);
   readonly isWalkinModalOpen = signal<boolean>(false);
@@ -574,13 +596,13 @@ export class AdminAppointmentsComponent implements OnInit {
       list = list.filter(a => a.status === status);
     }
 
-    if (this.unassignedOnly()) {
-      list = list.filter(a => a.assignedStaff.length === 0 && a.status === 'booked');
-    }
-
-    if (this.myAssignedOnly() && this.adminService.currentStaffId()) {
-      const myStaffId = this.adminService.currentStaffId();
-      list = list.filter(a => a.assignedStaff.some(s => s.id === myStaffId));
+    if (this.adminService.isSuperadmin()) {
+      if (this.unassignedOnly()) {
+        list = list.filter(a => a.assignedStaff.length === 0 && a.status === 'booked');
+      }
+      if (this.selectedStaffId()) {
+        list = list.filter(a => a.assignedStaff.some(s => s.id === this.selectedStaffId()));
+      }
     }
 
     return list;
@@ -606,15 +628,16 @@ export class AdminAppointmentsComponent implements OnInit {
     this.unassignedOnly.set((event.target as HTMLInputElement).checked);
   }
 
-  toggleMyAssigned(event: Event): void {
-    this.myAssignedOnly.set((event.target as HTMLInputElement).checked);
+  onStaffFilterChange(event: Event): void {
+    const val = (event.target as HTMLSelectElement).value;
+    this.selectedStaffId.set(val);
   }
 
   resetFilters(): void {
     this.selectedDateMode.set('today');
     this.selectedStatus.set('all');
     this.unassignedOnly.set(false);
-    this.myAssignedOnly.set(false);
+    this.selectedStaffId.set('');
   }
 
   // Stylist Assignment (Superadmin Only)
@@ -640,6 +663,7 @@ export class AdminAppointmentsComponent implements OnInit {
 
   // Walk-in Booking (Superadmin Only)
   openWalkinModal(): void {
+    if (!this.adminService.isSuperadmin()) return;
     this.isWalkinModalOpen.set(true);
   }
 
@@ -648,6 +672,7 @@ export class AdminAppointmentsComponent implements OnInit {
   }
 
   async saveWalkinBooking(): Promise<void> {
+    if (!this.adminService.isSuperadmin()) return;
     if (this.walkinForm.invalid) return;
 
     const val = this.walkinForm.value;
@@ -659,6 +684,7 @@ export class AdminAppointmentsComponent implements OnInit {
 
   // Edit Appointment (Superadmin Only)
   openEditModal(apt: AdminAppointment): void {
+    if (!this.adminService.isSuperadmin()) return;
     this.editingAppointment.set(apt);
     this.editForm.patchValue({
       customerName: apt.customer.name,
@@ -674,6 +700,7 @@ export class AdminAppointmentsComponent implements OnInit {
   }
 
   async saveEditedAppointment(apt: AdminAppointment): Promise<void> {
+    if (!this.adminService.isSuperadmin()) return;
     if (this.editForm.invalid) return;
 
     const val = this.editForm.value;
@@ -685,6 +712,7 @@ export class AdminAppointmentsComponent implements OnInit {
 
   // Delete Appointment (Superadmin Only)
   confirmDelete(apt: AdminAppointment): void {
+    if (!this.adminService.isSuperadmin()) return;
     this.deletingAppointment.set(apt);
   }
 

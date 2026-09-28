@@ -90,14 +90,28 @@ import { AdminRole } from '../../../core/models/admin.model';
                 type="button" 
                 class="btn btn-outline btn-block demo-super-btn" 
                 (click)="onDemoLoginSuperadmin()">
-                🔑 Superadmin Demo (Full CRUD & Assignment)
+                🔑 Superadmin (Owner — Full Access)
               </button>
-              <button 
-                type="button" 
-                class="btn btn-ghost btn-block demo-staff-btn" 
-                (click)="onDemoLoginStaff()">
-                ✂ Staff Demo (Rahul - Stylist View)
-              </button>
+              <div class="staff-demo-row">
+                <button 
+                  type="button" 
+                  class="btn btn-ghost demo-staff-btn" 
+                  (click)="onDemoLoginStaffMember('staff-rahul', 'rahul@thecroppers.in')">
+                  ✂ Rahul (Hair)
+                </button>
+                <button 
+                  type="button" 
+                  class="btn btn-ghost demo-staff-btn" 
+                  (click)="onDemoLoginStaffMember('staff-amit', 'amit@thecroppers.in')">
+                  💈 Amit (Barber)
+                </button>
+                <button 
+                  type="button" 
+                  class="btn btn-ghost demo-staff-btn" 
+                  (click)="onDemoLoginStaffMember('staff-priya', 'priya@thecroppers.in')">
+                  🌸 Priya (Skin)
+                </button>
+              </div>
             </div>
           </div>
         </form>
@@ -161,13 +175,13 @@ export class AdminLoginComponent {
     await this.onSubmit();
   }
 
-  async onDemoLoginStaff(): Promise<void> {
+  async onDemoLoginStaffMember(staffId: string, email: string): Promise<void> {
     this.selectedRole.set('staff');
     this.loginForm.setValue({
-      email: 'rahul@thecroppers.in',
+      email: email,
       password: 'demo-password'
     });
-    await this.adminService.login('rahul@thecroppers.in', 'demo-password', 'staff', 'staff-rahul');
-    this.router.navigate(['/admin/appointments']);
+    await this.adminService.login(email, 'demo-password', 'staff', staffId);
+    this.router.navigate(['/admin/dashboard']);
   }
 }

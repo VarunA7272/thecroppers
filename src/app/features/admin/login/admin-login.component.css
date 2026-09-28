@@ -157,6 +157,27 @@
   text-align: center;
 }
 
+.staff-demo-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.staff-demo-row .demo-staff-btn {
+  font-size: 0.74rem;
+  padding: 8px 4px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  border: 1px solid rgba(28, 25, 23, 0.1);
+  background: #fbfaf8;
+}
+
+.staff-demo-row .demo-staff-btn:hover {
+  background: rgba(181, 136, 64, 0.1);
+  border-color: var(--color-gold);
+}
+
 .login-footer {
   margin-top: 28px;
   padding-top: 20px;

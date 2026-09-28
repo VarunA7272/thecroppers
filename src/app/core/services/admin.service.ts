@@ -166,7 +166,7 @@ export class AdminService {
         price: 200,
         categoryName: 'Hair'
       },
-      assignedStaff: [], // NULL - needs superadmin assignment
+      assignedStaff: [], // Unassigned - needs superadmin assignment
       createdAt: new Date().toISOString()
     },
     {
@@ -210,7 +210,7 @@ export class AdminService {
         price: 100,
         categoryName: 'Beard'
       },
-      assignedStaff: [], // NULL - needs superadmin assignment
+      assignedStaff: [], // Unassigned - needs superadmin assignment
       createdAt: new Date().toISOString()
     },
     {
@@ -233,6 +233,94 @@ export class AdminService {
         categoryName: 'Skin'
       },
       assignedStaff: [this.staffStore()[2]], // Assigned to Priya
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: 'apt-105',
+      referenceNumber: 'TCP-829105',
+      salonId: environment.salonId,
+      date: new Date().toISOString().split('T')[0],
+      startTime: '09:30:00',
+      endTime: '10:00:00',
+      status: 'completed',
+      customer: {
+        name: 'Kunal Shah',
+        phone: '9826115544'
+      },
+      service: {
+        id: 'srv-haircut',
+        name: 'Haircut',
+        durationMinutes: 30,
+        price: 200,
+        categoryName: 'Hair'
+      },
+      assignedStaff: [this.staffStore()[0]], // Assigned to Rahul
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: 'apt-106',
+      referenceNumber: 'TCP-829106',
+      salonId: environment.salonId,
+      date: new Date().toISOString().split('T')[0],
+      startTime: '12:30:00',
+      endTime: '13:00:00',
+      status: 'booked',
+      customer: {
+        name: 'Harsh Vardhan',
+        phone: '9826227788'
+      },
+      service: {
+        id: 'srv-beard-trim',
+        name: 'Beard Trim',
+        durationMinutes: 15,
+        price: 100,
+        categoryName: 'Beard'
+      },
+      assignedStaff: [this.staffStore()[1]], // Assigned to Amit
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: 'apt-107',
+      referenceNumber: 'TCP-829107',
+      salonId: environment.salonId,
+      date: new Date().toISOString().split('T')[0],
+      startTime: '15:30:00',
+      endTime: '16:15:00',
+      status: 'booked',
+      customer: {
+        name: 'Sneha Patel',
+        phone: '9826338811'
+      },
+      service: {
+        id: 'srv-cleanup',
+        name: 'Cleanup',
+        durationMinutes: 45,
+        price: 400,
+        categoryName: 'Skin'
+      },
+      assignedStaff: [this.staffStore()[2]], // Assigned to Priya
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: 'apt-108',
+      referenceNumber: 'TCP-829108',
+      salonId: environment.salonId,
+      date: new Date().toISOString().split('T')[0],
+      startTime: '10:30:00',
+      endTime: '10:50:00',
+      status: 'completed',
+      customer: {
+        name: 'Sameer Khan',
+        phone: '9826449922'
+      },
+      service: {
+        id: 'srv-shave',
+        name: 'Shave',
+        durationMinutes: 20,
+        price: 100,
+        categoryName: 'Beard'
+      },
+      assignedStaff: [this.staffStore()[1]], // Assigned to Amit
       createdAt: new Date().toISOString()
     }
   ]);
@@ -314,16 +402,27 @@ export class AdminService {
 
     // Demo Mode Sign-in
     if (email && password) {
-      const role = forceRole || (email.includes('superadmin') || email.includes('owner') || email.includes('manager') ? 'superadmin' : 'staff');
-      const assignedStaff = staffId ? this.staffStore().find(s => s.id === staffId) : (role === 'staff' ? this.staffStore()[0] : undefined);
-      const name = role === 'superadmin' ? 'Owner / Superadmin' : (assignedStaff?.name || 'Rahul (Staff)');
+      const emailLower = email.toLowerCase();
+      const role = forceRole || (emailLower.includes('superadmin') || emailLower.includes('owner') || emailLower.includes('manager') ? 'superadmin' : 'staff');
+      const staffMembers = this.staffStore();
+      let assignedStaff: StaffMember | undefined;
+
+      if (staffId) {
+        assignedStaff = staffMembers.find(s => s.id === staffId);
+      } else if (role === 'staff') {
+        assignedStaff = staffMembers.find(s => emailLower.includes(s.name.toLowerCase())) || staffMembers[0];
+      }
+
+      const name = role === 'superadmin' 
+        ? 'Owner / Superadmin' 
+        : (assignedStaff ? `${assignedStaff.name} (${assignedStaff.role})` : 'Staff Member');
 
       const demoUser: AdminUser = {
-        id: role === 'superadmin' ? 'admin-super-1' : 'staff-user-1',
+        id: role === 'superadmin' ? 'admin-super-1' : (assignedStaff ? `user-${assignedStaff.id}` : 'staff-user-1'),
         email: email,
         role: role,
         name: name,
-        staffId: assignedStaff?.id || (role === 'staff' ? 'staff-rahul' : undefined)
+        staffId: role === 'staff' ? (assignedStaff?.id || 'staff-rahul') : undefined
       };
       this.currentUser.set(demoUser);
       localStorage.setItem('croppers_admin_user', JSON.stringify(demoUser));
@@ -598,23 +697,43 @@ export class AdminService {
   async getAppointments(filter?: AppointmentFilter): Promise<AdminAppointment[]> {
     let list = this.appointmentsStore();
 
+    // STRICT ROLE-BASED ACCESS CONTROL:
+    // If the authenticated user is staff, enforce strict scoping to their own assigned appointments.
+    if (this.isStaff()) {
+      const myStaffId = this.currentStaffId();
+      if (!myStaffId) {
+        return [];
+      }
+      // Staff members cannot view unassigned queue
+      if (filter?.unassignedOnly) {
+        return [];
+      }
+      list = list.filter(a => a.assignedStaff.some(s => s.id === myStaffId));
+    } else {
+      // Superadmin access: can filter by staffId or unassigned
+      if (filter?.unassignedOnly) {
+        list = list.filter(a => a.assignedStaff.length === 0 && a.status === 'booked');
+      }
+      if (filter?.staffId) {
+        list = list.filter(a => a.assignedStaff.some(s => s.id === filter.staffId));
+      }
+    }
+
     if (filter?.date) {
       list = list.filter(a => a.date === filter.date);
     }
     if (filter?.status && filter.status !== 'all') {
       list = list.filter(a => a.status === filter.status);
     }
-    if (filter?.unassignedOnly) {
-      list = list.filter(a => a.assignedStaff.length === 0 && a.status === 'booked');
-    }
-    if (filter?.staffId) {
-      list = list.filter(a => a.assignedStaff.some(s => s.id === filter.staffId));
-    }
 
     return list;
   }
 
   async createManualAppointment(payload: CreateManualAppointmentPayload): Promise<AdminAppointment> {
+    if (!this.isSuperadmin()) {
+      throw new Error('Unauthorized: Only Superadmin can create manual walk-in appointments.');
+    }
+
     const service = this.servicesStore().find(s => s.id === payload.serviceId) || this.servicesStore()[0];
     const assignedStaffList: StaffMember[] = [];
 
@@ -663,6 +782,10 @@ export class AdminService {
   }
 
   async updateAppointment(id: string, payload: UpdateAppointmentPayload): Promise<AdminAppointment | null> {
+    if (!this.isSuperadmin()) {
+      throw new Error('Unauthorized: Only Superadmin can edit appointment details.');
+    }
+
     let updated: AdminAppointment | null = null;
 
     this.appointmentsStore.update(list =>
@@ -700,6 +823,9 @@ export class AdminService {
   }
 
   async deleteAppointment(id: string): Promise<boolean> {
+    if (!this.isSuperadmin()) {
+      throw new Error('Unauthorized: Only Superadmin can delete appointments.');
+    }
     this.appointmentsStore.update(list => list.filter(a => a.id !== id));
     return true;
   }
@@ -752,11 +878,26 @@ export class AdminService {
     return { success: true };
   }
 
-  // Update status is allowed for both superadmin and staff
+  // Update status is allowed for superadmin, and for staff STRICTLY on their own assigned appointments
   async updateAppointmentStatus(
     appointmentId: string,
     status: 'booked' | 'completed' | 'cancelled' | 'no_show'
   ): Promise<boolean> {
+    const targetApt = this.appointmentsStore().find(a => a.id === appointmentId);
+    if (!targetApt) {
+      return false;
+    }
+
+    // Role check: If staff, ensure the appointment is assigned to them
+    if (this.isStaff()) {
+      const myStaffId = this.currentStaffId();
+      const isAssignedToMe = targetApt.assignedStaff.some(s => s.id === myStaffId);
+      if (!isAssignedToMe) {
+        console.warn(`[AdminService] Unauthorized status update attempt by staff ${myStaffId} on appointment ${appointmentId}`);
+        return false;
+      }
+    }
+
     if (this.supabase.isReady && this.supabase.clientInstance) {
       try {
         await this.supabase.clientInstance
