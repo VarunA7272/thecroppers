@@ -322,6 +322,45 @@ export class AdminService {
       },
       assignedStaff: [this.staffStore()[1]], // Assigned to Amit
       createdAt: new Date().toISOString()
+    },
+    {
+      id: 'apt-109',
+      referenceNumber: 'TCP-829109',
+      salonId: environment.salonId,
+      date: new Date().toISOString().split('T')[0],
+      startTime: '17:00:00',
+      endTime: '17:45:00',
+      status: 'booked',
+      customer: {
+        name: 'Aditya Singhania',
+        phone: '9826771122'
+      },
+      service: {
+        id: 'srv-haircut',
+        name: 'Haircut + Beard Trim',
+        durationMinutes: 45,
+        price: 300,
+        categoryName: 'Hair & Beard'
+      },
+      services: [
+        {
+          id: 'srv-haircut',
+          name: 'Haircut',
+          durationMinutes: 30,
+          price: 200,
+          categoryName: 'Hair'
+        },
+        {
+          id: 'srv-beard-trim',
+          name: 'Beard Trim',
+          durationMinutes: 15,
+          price: 100,
+          categoryName: 'Beard'
+        }
+      ],
+      assignedStaff: [this.staffStore()[0], this.staffStore()[1]], // Multi-stylist: Rahul & Amit
+      notes: 'Multi-service: Haircut by Rahul, Beard Trim by Amit',
+      createdAt: new Date().toISOString()
     }
   ]);
 
@@ -830,11 +869,16 @@ export class AdminService {
     return true;
   }
 
-  // Assign staff is STRICTLY SUPERADMIN ONLY
-  async assignStaff(appointmentId: string, staff: StaffMember): Promise<{ success: boolean; error?: string }> {
+  // Assign staff is STRICTLY SUPERADMIN ONLY (Supports single or multiple stylists)
+  async assignStaff(
+    appointmentId: string, 
+    staffOrList: StaffMember | StaffMember[]
+  ): Promise<{ success: boolean; error?: string }> {
     if (!this.isSuperadmin()) {
       return { success: false, error: 'Unauthorized: Only Superadmin can assign or reassign staff to appointments.' };
     }
+
+    const staffList = Array.isArray(staffOrList) ? staffOrList : [staffOrList];
 
     if (this.supabase.isReady && this.supabase.clientInstance) {
       try {
@@ -851,12 +895,15 @@ export class AdminService {
             .delete()
             .eq('appointment_service_id', aptServiceId);
 
-          await this.supabase.clientInstance
-            .from('appointment_service_staff')
-            .insert({
+          if (staffList.length > 0) {
+            const inserts = staffList.map(s => ({
               appointment_service_id: aptServiceId,
-              staff_id: staff.id
-            });
+              staff_id: s.id
+            }));
+            await this.supabase.clientInstance
+              .from('appointment_service_staff')
+              .insert(inserts);
+          }
         }
       } catch (err) {
         console.warn('[AdminService] Supabase assignStaff error:', err);
@@ -868,7 +915,7 @@ export class AdminService {
         if (apt.id === appointmentId) {
           return {
             ...apt,
-            assignedStaff: [staff]
+            assignedStaff: [...staffList]
           };
         }
         return apt;

@@ -34,6 +34,14 @@ export interface UpdateStaffPayload {
   is_active?: boolean;
 }
 
+export interface AppointmentServiceItem {
+  id: string;
+  name: string;
+  durationMinutes: number;
+  price: number;
+  categoryName?: string;
+}
+
 export interface AdminAppointment {
   id: string;
   referenceNumber: string;
@@ -54,7 +62,8 @@ export interface AdminAppointment {
     price: number;
     categoryName?: string;
   };
-  assignedStaff: StaffMember[];
+  services?: AppointmentServiceItem[]; // Multi-service item breakdown
+  assignedStaff: StaffMember[]; // Can contain multiple assigned stylists
   createdAt?: string;
   notes?: string;
 }

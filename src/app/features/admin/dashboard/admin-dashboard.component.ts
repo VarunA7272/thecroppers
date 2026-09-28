@@ -254,7 +254,9 @@ import { AdminAppointment, StaffMember } from '../../../core/models/admin.model'
                   <div class="queue-action-col">
                     @if (adminService.isSuperadmin()) {
                       @if (apt.assignedStaff.length > 0) {
-                        <span class="assigned-tag">Stylist: {{ apt.assignedStaff[0].name }}</span>
+                        <span class="assigned-tag">
+                          Stylist{{ apt.assignedStaff.length > 1 ? 's' : '' }}: {{ getStylistNames(apt.assignedStaff) }}
+                        </span>
                       } @else {
                         <span class="unassigned-badge">Needs Stylist</span>
                       }
@@ -364,6 +366,11 @@ export class AdminDashboardComponent implements OnInit {
       setTimeout(() => this.actionFeedback.set(null), 3500);
       await this.loadData();
     }
+  }
+
+  getStylistNames(staffList: StaffMember[]): string {
+    if (!staffList || staffList.length === 0) return 'Unassigned';
+    return staffList.map(s => s.name).join(', ');
   }
 
   formatTime12(timeStr: string): string {

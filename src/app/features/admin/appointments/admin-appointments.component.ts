@@ -215,15 +215,22 @@ import { SalonService } from '../../../core/models/service.model';
 
                 <!-- Staff Assignment Box (SUPERADMIN CAN ASSIGN, STAFF CAN ONLY VIEW) -->
                 <div class="staff-assignment-box">
-                  <span class="assignment-label">Assigned Stylist:</span>
+                  <span class="assignment-label">Assigned Stylist{{ apt.assignedStaff.length > 1 ? 's' : '' }}:</span>
                   @if (apt.assignedStaff.length > 0) {
                     <div class="assigned-staff-info">
                       <div class="staff-badge">
                         <span class="stylist-icon">✂</span>
                         <strong>
-                          {{ adminService.isStaff() ? 'Assigned to You (' + apt.assignedStaff[0].name + ')' : apt.assignedStaff[0].name }}
+                          @if (adminService.isStaff()) {
+                            @if (apt.assignedStaff.length === 1) {
+                              Assigned to You
+                            } @else {
+                              Assigned to You & {{ getOtherStylists(apt.assignedStaff) }}
+                            }
+                          } @else {
+                            {{ getStylistNames(apt.assignedStaff) }}
+                          }
                         </strong>
-                        <span class="staff-role-sub">({{ apt.assignedStaff[0].role }})</span>
                       </div>
                       
                       @if (adminService.isSuperadmin()) {
@@ -231,7 +238,7 @@ import { SalonService } from '../../../core/models/service.model';
                           type="button" 
                           class="btn btn-ghost btn-sm reassign-btn" 
                           (click)="openAssignModal(apt)">
-                          Reassign
+                          Assign / Manage ({{ apt.assignedStaff.length }})
                         </button>
                       }
                     </div>
@@ -307,12 +314,12 @@ import { SalonService } from '../../../core/models/service.model';
         </div>
       }
 
-      <!-- 1. STYLIST ASSIGNMENT MODAL (SUPERADMIN ONLY) -->
+      <!-- 1. STYLIST ASSIGNMENT MODAL (SUPERADMIN ONLY - MULTI-STYLIST SUPPORT) -->
       @if (activeModalAppointment(); as modalApt) {
         <div class="modal-backdrop" (click)="closeAssignModal()">
           <div class="croppers-card modal-card" (click)="$event.stopPropagation()">
             <div class="modal-header">
-              <h3 class="modal-title">Assign Stylist (Superadmin)</h3>
+              <h3 class="modal-title">Assign Stylists (Superadmin)</h3>
               <button type="button" class="close-modal-btn" (click)="closeAssignModal()">✕</button>
             </div>
 
@@ -328,29 +335,42 @@ import { SalonService } from '../../../core/models/service.model';
               </div>
             </div>
 
-            <p class="modal-instruction">Select an internal stylist for this service:</p>
+            <p class="modal-instruction">
+              Select 1 or more stylists for this customer's services (e.g. combo bookings):
+            </p>
 
             <div class="staff-options-list">
               @for (staff of staffList(); track staff.id) {
                 <div 
                   class="staff-option-card" 
-                  [class.current]="modalApt.assignedStaff.length > 0 && modalApt.assignedStaff[0].id === staff.id"
-                  (click)="confirmAssignment(modalApt, staff)">
+                  [class.current]="isStaffSelectedInModal(staff.id)"
+                  (click)="toggleStaffInModal(staff)">
                   <div class="staff-option-avatar">{{ staff.name.charAt(0) }}</div>
                   <div class="staff-option-info">
                     <span class="name">{{ staff.name }}</span>
                     <span class="role">{{ staff.role }} • {{ staff.specialization | uppercase }}</span>
                   </div>
-                  <button type="button" class="btn btn-outline btn-sm">
-                    Select {{ staff.name }}
+                  <button 
+                    type="button" 
+                    class="btn btn-sm"
+                    [class.btn-primary]="isStaffSelectedInModal(staff.id)"
+                    [class.btn-outline]="!isStaffSelectedInModal(staff.id)">
+                    {{ isStaffSelectedInModal(staff.id) ? '✓ Assigned' : '+ Add' }}
                   </button>
                 </div>
               }
             </div>
 
-            <div class="modal-footer">
+            <div class="modal-footer modal-actions-row">
               <button type="button" class="btn btn-ghost" (click)="closeAssignModal()">
-                Close
+                Cancel
+              </button>
+              <button 
+                type="button" 
+                class="btn btn-primary" 
+                [disabled]="selectedStaffInModal().length === 0"
+                (click)="saveAssignments(modalApt)">
+                Save Assignments ({{ selectedStaffInModal().length }} Stylist{{ selectedStaffInModal().length === 1 ? '' : 's' }})
               </button>
             </div>
           </div>
@@ -531,6 +551,7 @@ export class AdminAppointmentsComponent implements OnInit {
   });
 
   readonly activeModalAppointment = signal<AdminAppointment | null>(null);
+  readonly selectedStaffInModal = signal<StaffMember[]>([]);
   readonly isWalkinModalOpen = signal<boolean>(false);
   readonly editingAppointment = signal<AdminAppointment | null>(null);
   readonly deletingAppointment = signal<AdminAppointment | null>(null);
@@ -640,25 +661,53 @@ export class AdminAppointmentsComponent implements OnInit {
     this.selectedStaffId.set('');
   }
 
-  // Stylist Assignment (Superadmin Only)
+  // Stylist Assignment (Superadmin Only - Multi-Stylist Support)
   openAssignModal(apt: AdminAppointment): void {
     if (!this.adminService.isSuperadmin()) return;
     this.activeModalAppointment.set(apt);
+    this.selectedStaffInModal.set([...apt.assignedStaff]);
   }
 
   closeAssignModal(): void {
     this.activeModalAppointment.set(null);
+    this.selectedStaffInModal.set([]);
   }
 
-  async confirmAssignment(apt: AdminAppointment, staff: StaffMember): Promise<void> {
-    const res = await this.adminService.assignStaff(apt.id, staff);
+  isStaffSelectedInModal(staffId: string): boolean {
+    return this.selectedStaffInModal().some(s => s.id === staffId);
+  }
+
+  toggleStaffInModal(staff: StaffMember): void {
+    const current = this.selectedStaffInModal();
+    if (current.some(s => s.id === staff.id)) {
+      this.selectedStaffInModal.set(current.filter(s => s.id !== staff.id));
+    } else {
+      this.selectedStaffInModal.set([...current, staff]);
+    }
+  }
+
+  async saveAssignments(apt: AdminAppointment): Promise<void> {
+    const selected = this.selectedStaffInModal();
+    const res = await this.adminService.assignStaff(apt.id, selected);
     if (res.success) {
       await this.refreshData();
-      this.showToast(`Assigned ${staff.name} to ${apt.customer.name}'s appointment.`);
+      const names = selected.map(s => s.name).join(', ');
+      this.showToast(`Assigned ${names} to ${apt.customer.name}'s appointment.`);
       this.closeAssignModal();
     } else {
       alert(res.error || 'Failed to assign staff.');
     }
+  }
+
+  getStylistNames(staffList: StaffMember[]): string {
+    if (!staffList || staffList.length === 0) return 'Unassigned';
+    return staffList.map(s => s.name).join(', ');
+  }
+
+  getOtherStylists(staffList: StaffMember[]): string {
+    const myId = this.adminService.currentStaffId();
+    const others = staffList.filter(s => s.id !== myId);
+    return others.map(s => s.name).join(', ');
   }
 
   // Walk-in Booking (Superadmin Only)

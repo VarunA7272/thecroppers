@@ -96,8 +96,8 @@ describe('AdminService (Staff vs Superadmin Strict Data Isolation)', () => {
       // Every single appointment must be assigned to Rahul
       expect(appointments.every(a => a.assignedStaff.some(s => s.id === 'staff-rahul'))).toBe(true);
 
-      // Must NEVER contain appointments assigned to Amit, Priya, or unassigned
-      expect(appointments.some(a => a.assignedStaff.some(s => s.id === 'staff-amit'))).toBe(false);
+      // Must NEVER contain appointments that do not include Rahul (e.g. Priya-only or unassigned)
+      expect(appointments.some(a => a.assignedStaff.every(s => s.id !== 'staff-rahul'))).toBe(false);
       expect(appointments.some(a => a.assignedStaff.some(s => s.id === 'staff-priya'))).toBe(false);
       expect(appointments.some(a => a.assignedStaff.length === 0)).toBe(false);
     });
@@ -156,7 +156,8 @@ describe('AdminService (Staff vs Superadmin Strict Data Isolation)', () => {
 
       expect(amitAppointments.length).toBeGreaterThan(0);
       expect(amitAppointments.every(a => a.assignedStaff.some(s => s.id === 'staff-amit'))).toBe(true);
-      expect(amitAppointments.some(a => a.assignedStaff.some(s => s.id === 'staff-rahul'))).toBe(false);
+      expect(amitAppointments.some(a => a.assignedStaff.every(s => s.id !== 'staff-amit'))).toBe(false);
+      expect(amitAppointments.some(a => a.assignedStaff.some(s => s.id === 'staff-priya'))).toBe(false);
     });
 
     it('should isolate Priya to only Priya appointments', async () => {
@@ -166,6 +167,54 @@ describe('AdminService (Staff vs Superadmin Strict Data Isolation)', () => {
       expect(priyaAppointments.length).toBeGreaterThan(0);
       expect(priyaAppointments.every(a => a.assignedStaff.some(s => s.id === 'staff-priya'))).toBe(true);
       expect(priyaAppointments.some(a => a.assignedStaff.some(s => s.id === 'staff-amit'))).toBe(false);
+    });
+  });
+
+  describe('Multi-Stylist Assignment on Combo / Multi-Service Bookings', () => {
+    it('should allow superadmin to assign multiple stylists to an appointment', async () => {
+      await service.login('owner@thecroppers.in', 'password123', 'superadmin');
+      const staffList = await service.getStaffMembers();
+      const rahul = staffList.find(s => s.id === 'staff-rahul')!;
+      const amit = staffList.find(s => s.id === 'staff-amit')!;
+
+      // Assign both Rahul and Amit to apt-101
+      const assignRes = await service.assignStaff('apt-101', [rahul, amit]);
+      expect(assignRes.success).toBe(true);
+
+      const allApts = await service.getAppointments();
+      const targetApt = allApts.find(a => a.id === 'apt-101')!;
+      expect(targetApt.assignedStaff.length).toBe(2);
+      expect(targetApt.assignedStaff.some(s => s.id === 'staff-rahul')).toBe(true);
+      expect(targetApt.assignedStaff.some(s => s.id === 'staff-amit')).toBe(true);
+    });
+
+    it('should make multi-stylist booking visible to BOTH assigned stylists, but not to unassigned stylists', async () => {
+      // 1. Log in as Rahul: apt-109 (seeded with both Rahul & Amit) should be visible
+      await service.login('rahul@thecroppers.in', 'password123', 'staff', 'staff-rahul');
+      const rahulApts = await service.getAppointments();
+      const rahulHasApt109 = rahulApts.some(a => a.id === 'apt-109');
+      expect(rahulHasApt109).toBe(true);
+
+      // 2. Log in as Amit: apt-109 should also be visible to Amit
+      await service.login('amit@thecroppers.in', 'password123', 'staff', 'staff-amit');
+      const amitApts = await service.getAppointments();
+      const amitHasApt109 = amitApts.some(a => a.id === 'apt-109');
+      expect(amitHasApt109).toBe(true);
+
+      // 3. Log in as Priya: apt-109 should NOT be visible to Priya
+      await service.login('priya@thecroppers.in', 'password123', 'staff', 'staff-priya');
+      const priyaApts = await service.getAppointments();
+      const priyaHasApt109 = priyaApts.some(a => a.id === 'apt-109');
+      expect(priyaHasApt109).toBe(false);
+
+      // 4. Priya should be prevented from altering status of apt-109
+      const priyaUpdate = await service.updateAppointmentStatus('apt-109', 'completed');
+      expect(priyaUpdate).toBe(false);
+
+      // 5. Rahul CAN alter status of apt-109
+      await service.login('rahul@thecroppers.in', 'password123', 'staff', 'staff-rahul');
+      const rahulUpdate = await service.updateAppointmentStatus('apt-109', 'completed');
+      expect(rahulUpdate).toBe(true);
     });
   });
 });
