@@ -296,7 +296,7 @@ export class HomeComponent implements OnInit {
   }
 
   bookThisService(service: SalonService): void {
-    this.bookingService.selectService(service);
+    this.bookingService.addService(service);
     this.router.navigate(['/book']);
   }
 }

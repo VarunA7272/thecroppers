@@ -6,6 +6,7 @@ import { SalonService } from '../models/service.model';
 import { environment } from '../../../environments/environment';
 
 const INITIAL_BOOKING_STATE: BookingState = {
+  selectedServices: [],
   serviceId: null,
   serviceName: null,
   serviceDuration: null,
@@ -33,11 +34,25 @@ export class BookingService {
   readonly errorMessage = signal<string | null>(null);
 
   // Computeds
+  readonly selectedServices = computed(() => this.state().selectedServices);
+  
+  readonly totalDuration = computed(() => 
+    this.state().selectedServices.reduce((sum, s) => sum + s.duration_minutes, 0)
+  );
+
+  readonly totalPrice = computed(() => 
+    this.state().selectedServices.reduce((sum, s) => sum + s.price, 0)
+  );
+
+  readonly selectedServiceNames = computed(() => 
+    this.state().selectedServices.map(s => s.name).join(' + ')
+  );
+
   readonly selectedService = computed(() => ({
     id: this.state().serviceId,
-    name: this.state().serviceName,
-    duration: this.state().serviceDuration,
-    price: this.state().servicePrice
+    name: this.selectedServiceNames() || this.state().serviceName,
+    duration: this.totalDuration() || this.state().serviceDuration,
+    price: this.totalPrice() || this.state().servicePrice
   }));
 
   readonly selectedDate = computed(() => this.state().date);
@@ -46,7 +61,7 @@ export class BookingService {
     end: this.state().slotEnd
   }));
 
-  readonly isServiceSelected = computed(() => !!this.state().serviceId);
+  readonly isServiceSelected = computed(() => this.state().selectedServices.length > 0);
   readonly isDateSelected = computed(() => !!this.state().date);
   readonly isSlotSelected = computed(() => !!this.state().slotStart);
   readonly isCustomerDetailsValid = computed(() => {
@@ -62,14 +77,76 @@ export class BookingService {
     this.isCustomerDetailsValid()
   );
 
+  /**
+   * Check if a specific service is currently selected
+   */
+  isServiceInCart(serviceId: string): boolean {
+    return this.state().selectedServices.some(s => s.id === serviceId);
+  }
+
+  /**
+   * Toggle a service (select if not present, unselect if present)
+   */
+  toggleService(service: SalonService): void {
+    const current = this.state().selectedServices;
+    const exists = current.some(s => s.id === service.id);
+    let updated: SalonService[];
+
+    if (exists) {
+      updated = current.filter(s => s.id !== service.id);
+    } else {
+      updated = [...current, service];
+    }
+
+    this.applySelectedServices(updated);
+  }
+
+  /**
+   * Add a service to selection if not already present
+   */
+  addService(service: SalonService): void {
+    const current = this.state().selectedServices;
+    if (!current.some(s => s.id === service.id)) {
+      this.applySelectedServices([...current, service]);
+    }
+  }
+
+  /**
+   * Remove a service from selection
+   */
+  removeService(serviceId: string): void {
+    const current = this.state().selectedServices;
+    this.applySelectedServices(current.filter(s => s.id !== serviceId));
+  }
+
+  /**
+   * Set single service selection (for backwards compatibility)
+   */
   selectService(service: SalonService): void {
+    this.applySelectedServices([service]);
+  }
+
+  /**
+   * Clear all selected services
+   */
+  clearServices(): void {
+    this.applySelectedServices([]);
+  }
+
+  private applySelectedServices(services: SalonService[]): void {
+    const primaryId = services.length > 0 ? services[0].id : null;
+    const names = services.map(s => s.name).join(' + ');
+    const totalDur = services.reduce((sum, s) => sum + s.duration_minutes, 0);
+    const totalPr = services.reduce((sum, s) => sum + s.price, 0);
+
     this.state.update(prev => ({
       ...prev,
-      serviceId: service.id,
-      serviceName: service.name,
-      serviceDuration: service.duration_minutes,
-      servicePrice: service.price,
-      // reset downstream selections if service changed
+      selectedServices: services,
+      serviceId: primaryId,
+      serviceName: names || null,
+      serviceDuration: totalDur || null,
+      servicePrice: totalPr || null,
+      // reset downstream slot if services changed
       slotStart: null,
       slotEnd: null
     }));
@@ -88,10 +165,14 @@ export class BookingService {
   }
 
   selectSlot(slot: AvailableSlot): void {
+    // If multiple services are selected, recalculate slot_end based on total duration
+    const dur = this.totalDuration() || 30;
+    const calculatedEnd = this.calculateEndTime(slot.slot_start, dur);
+
     this.state.update(prev => ({
       ...prev,
       slotStart: slot.slot_start,
-      slotEnd: slot.slot_end
+      slotEnd: calculatedEnd
     }));
     this.errorMessage.set(null);
   }
@@ -113,15 +194,17 @@ export class BookingService {
   /**
    * Fetches available slots for the selected date and service from Supabase RPC get_available_slots
    */
-  async fetchAvailableSlots(date: string, serviceId: string): Promise<FormattedSlot[]> {
+  async fetchAvailableSlots(date: string, serviceId?: string): Promise<FormattedSlot[]> {
     this.isLoadingSlots.set(true);
     this.errorMessage.set(null);
+
+    const srvId = serviceId || this.state().serviceId || 'srv-haircut';
 
     try {
       if (this.supabase.isReady) {
         const { data, error } = await this.supabase.callRpc<AvailableSlot[]>('get_available_slots', {
           p_salon_id: this.salonId,
-          p_service_id: serviceId,
+          p_service_id: srvId,
           p_date: date
         });
 
@@ -167,13 +250,20 @@ export class BookingService {
     this.isSubmitting.set(true);
     this.errorMessage.set(null);
 
+    const combinedName = this.selectedServiceNames();
+    const totalPrice = this.totalPrice();
+    const totalDuration = this.totalDuration();
+
     const payload: BookingPayload = {
       salonId: this.salonId,
       serviceId: currentState.serviceId!,
+      serviceIds: currentState.selectedServices.map(s => s.id),
       date: currentState.date!,
       startTime: currentState.slotStart!,
       customerName: currentState.customerName.trim(),
-      customerPhone: currentState.customerPhone.trim()
+      customerPhone: currentState.customerPhone.trim(),
+      totalPrice,
+      totalDuration
     };
 
     try {
@@ -202,7 +292,15 @@ export class BookingService {
           appointmentId: data?.id || data?.appointment_id || (typeof data === 'string' ? data : 'CROPPERS-' + Math.random().toString(36).substring(2, 8).toUpperCase()),
           referenceNumber: data?.reference_number || 'TCP-' + Math.floor(100000 + Math.random() * 900000),
           status: 'booked',
-          serviceName: currentState.serviceName || undefined,
+          serviceName: combinedName,
+          services: currentState.selectedServices.map(s => ({
+            id: s.id,
+            name: s.name,
+            price: s.price,
+            duration_minutes: s.duration_minutes
+          })),
+          totalPrice,
+          totalDuration,
           date: currentState.date || undefined,
           slotStart: currentState.slotStart || undefined,
           slotEnd: currentState.slotEnd || undefined,
@@ -220,7 +318,15 @@ export class BookingService {
           appointmentId: 'CROPPERS-DEMO-' + Math.random().toString(36).substring(2, 8).toUpperCase(),
           referenceNumber: 'TCP-' + Math.floor(100000 + Math.random() * 900000),
           status: 'booked',
-          serviceName: currentState.serviceName || undefined,
+          serviceName: combinedName,
+          services: currentState.selectedServices.map(s => ({
+            id: s.id,
+            name: s.name,
+            price: s.price,
+            duration_minutes: s.duration_minutes
+          })),
+          totalPrice,
+          totalDuration,
           date: currentState.date || undefined,
           slotStart: currentState.slotStart || undefined,
           slotEnd: currentState.slotEnd || undefined,
@@ -243,6 +349,17 @@ export class BookingService {
     } finally {
       this.isSubmitting.set(false);
     }
+  }
+
+  calculateEndTime(startTime: string, durationMinutes: number): string {
+    if (!startTime) return '';
+    const parts = startTime.split(':');
+    const h = parseInt(parts[0], 10);
+    const m = parseInt(parts[1] || '00', 10);
+    const totalM = h * 60 + m + durationMinutes;
+    const endH = Math.floor(totalM / 60);
+    const endM = totalM % 60;
+    return `${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}:00`;
   }
 
   private normalizeErrorMessage(error: any): string {
@@ -271,9 +388,12 @@ export class BookingService {
   }
 
   private formatSlots(rawSlots: AvailableSlot[]): FormattedSlot[] {
+    const duration = this.totalDuration() || 30;
+
     return rawSlots.map(slot => {
+      const calculatedEnd = this.calculateEndTime(slot.slot_start, duration);
       const displayStart = this.formatTime12Hour(slot.slot_start);
-      const displayEnd = this.formatTime12Hour(slot.slot_end);
+      const displayEnd = this.formatTime12Hour(calculatedEnd);
       const hour = parseInt(slot.slot_start.split(':')[0], 10);
       let period: 'morning' | 'afternoon' | 'evening' = 'morning';
       if (hour >= 12 && hour < 17) {
@@ -284,6 +404,7 @@ export class BookingService {
 
       return {
         ...slot,
+        slot_end: calculatedEnd,
         displayStart,
         displayEnd,
         period
@@ -291,7 +412,7 @@ export class BookingService {
     });
   }
 
-  private formatTime12Hour(timeStr: string): string {
+  formatTime12Hour(timeStr: string): string {
     if (!timeStr) return '';
     const parts = timeStr.split(':');
     let hour = parseInt(parts[0], 10);
@@ -303,29 +424,33 @@ export class BookingService {
   }
 
   private generateMockSlots(): FormattedSlot[] {
+    const duration = this.totalDuration() || 30;
     const timeRanges = [
-      { start: '10:00:00', end: '10:30:00', period: 'morning' as const },
-      { start: '10:30:00', end: '11:00:00', period: 'morning' as const },
-      { start: '11:00:00', end: '11:30:00', period: 'morning' as const },
-      { start: '11:30:00', end: '12:00:00', period: 'morning' as const },
-      { start: '12:00:00', end: '12:30:00', period: 'afternoon' as const },
-      { start: '12:30:00', end: '13:00:00', period: 'afternoon' as const },
-      { start: '14:00:00', end: '14:30:00', period: 'afternoon' as const },
-      { start: '15:00:00', end: '15:30:00', period: 'afternoon' as const },
-      { start: '16:00:00', end: '16:30:00', period: 'afternoon' as const },
-      { start: '17:00:00', end: '17:30:00', period: 'evening' as const },
-      { start: '17:30:00', end: '18:00:00', period: 'evening' as const },
-      { start: '18:00:00', end: '18:30:00', period: 'evening' as const },
-      { start: '19:00:00', end: '19:30:00', period: 'evening' as const }
+      { start: '10:00:00', period: 'morning' as const },
+      { start: '10:30:00', period: 'morning' as const },
+      { start: '11:00:00', period: 'morning' as const },
+      { start: '11:30:00', period: 'morning' as const },
+      { start: '12:00:00', period: 'afternoon' as const },
+      { start: '12:30:00', period: 'afternoon' as const },
+      { start: '14:00:00', period: 'afternoon' as const },
+      { start: '15:00:00', period: 'afternoon' as const },
+      { start: '16:00:00', period: 'afternoon' as const },
+      { start: '17:00:00', period: 'evening' as const },
+      { start: '17:30:00', period: 'evening' as const },
+      { start: '18:00:00', period: 'evening' as const },
+      { start: '19:00:00', period: 'evening' as const }
     ];
 
-    return timeRanges.map((t, idx) => ({
-      slot_start: t.start,
-      slot_end: t.end,
-      available: idx !== 2 && idx !== 7, // mock a couple of unavailable slots
-      displayStart: this.formatTime12Hour(t.start),
-      displayEnd: this.formatTime12Hour(t.end),
-      period: t.period
-    }));
+    return timeRanges.map((t, idx) => {
+      const calculatedEnd = this.calculateEndTime(t.start, duration);
+      return {
+        slot_start: t.start,
+        slot_end: calculatedEnd,
+        available: idx !== 2 && idx !== 7, // mock a couple of unavailable slots
+        displayStart: this.formatTime12Hour(t.start),
+        displayEnd: this.formatTime12Hour(calculatedEnd),
+        period: t.period
+      };
+    });
   }
 }

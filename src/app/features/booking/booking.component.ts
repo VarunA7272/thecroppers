@@ -48,17 +48,38 @@ import { FormattedSlot } from '../../core/models/slot.model';
                   <span class="detail-label">Booking Reference</span>
                   <span class="detail-value ref-badge">{{ confirmed.referenceNumber }}</span>
                 </div>
-                <div class="detail-row">
-                  <span class="detail-label">Service</span>
-                  <span class="detail-value">{{ confirmed.serviceName }}</span>
+
+                @if (confirmed.services && confirmed.services.length > 0) {
+                  <div class="detail-row multi-services-row">
+                    <span class="detail-label">Treatments ({{ confirmed.services.length }})</span>
+                    <div class="detail-value multi-services-list">
+                      @for (s of confirmed.services; track s.id) {
+                        <div class="service-confirmed-item">
+                          <span>{{ s.name }} ({{ s.duration_minutes }}m)</span>
+                          <span class="price-val">₹{{ s.price }}</span>
+                        </div>
+                      }
+                    </div>
+                  </div>
+                } @else {
+                  <div class="detail-row">
+                    <span class="detail-label">Service</span>
+                    <span class="detail-value">{{ confirmed.serviceName }}</span>
+                  </div>
+                }
+
+                <div class="detail-row total-highlight-row">
+                  <span class="detail-label">Total Amount</span>
+                  <span class="detail-value total-val">₹{{ confirmed.totalPrice || bookingService.totalPrice() }}</span>
                 </div>
+
                 <div class="detail-row">
                   <span class="detail-label">Date</span>
                   <span class="detail-value">{{ confirmed.date }}</span>
                 </div>
                 <div class="detail-row">
                   <span class="detail-label">Reserved Window</span>
-                  <span class="detail-value">{{ confirmed.slotStart }} – {{ confirmed.slotEnd }}</span>
+                  <span class="detail-value">{{ formatTime12Hour(confirmed.slotStart || '') }} – {{ formatTime12Hour(confirmed.slotEnd || '') }}</span>
                 </div>
                 <div class="detail-row">
                   <span class="detail-label">Guest Name</span>
@@ -161,8 +182,10 @@ import { FormattedSlot } from '../../core/models/slot.model';
               <div class="step-panel">
                 <div class="step-header">
                   <span class="step-badge">Step 1 of 5</span>
-                  <h2 class="step-title">Select A Service</h2>
-                  <p class="step-desc">Choose from our signature hair, beard, and skin care rituals.</p>
+                  <h2 class="step-title">Select Treatment(s)</h2>
+                  <p class="step-desc">
+                    Choose one or more treatments from our menu. We'll automatically allocate a combined, seamless appointment window for you.
+                  </p>
                 </div>
 
                 @if (isLoadingServices()) {
@@ -175,13 +198,20 @@ import { FormattedSlot } from '../../core/models/slot.model';
                     @for (service of availableServices(); track service.id) {
                       <div 
                         class="croppers-card service-pick-card" 
-                        [class.selected]="bookingService.state().serviceId === service.id"
-                        (click)="selectService(service)">
-                        <div class="card-radio-indicator">
-                          <span class="radio-dot"></span>
+                        [class.selected]="bookingService.isServiceInCart(service.id)"
+                        (click)="toggleService(service)">
+                        <div class="card-checkbox-indicator">
+                          @if (bookingService.isServiceInCart(service.id)) {
+                            <span class="check-mark">✓</span>
+                          }
                         </div>
                         <div class="card-content">
-                          <span class="service-category">{{ service.category_name || 'Treatment' }}</span>
+                          <div class="service-top-meta">
+                            <span class="service-category">{{ service.category_name || 'Treatment' }}</span>
+                            @if (bookingService.isServiceInCart(service.id)) {
+                              <span class="selected-badge-tag">Selected</span>
+                            }
+                          </div>
                           <h3 class="service-name">{{ service.name }}</h3>
                           <p class="service-desc">{{ service.description }}</p>
                           <div class="service-chips">
@@ -200,15 +230,53 @@ import { FormattedSlot } from '../../core/models/slot.model';
                   </div>
                 }
 
-                <div class="step-actions">
-                  <button 
-                    type="button" 
-                    class="btn btn-primary btn-lg" 
-                    [disabled]="!bookingService.isServiceSelected()"
-                    (click)="nextStep()">
-                    Continue to Date
-                  </button>
-                </div>
+                <!-- Selected Services Summary Tray -->
+                @if (bookingService.selectedServices().length > 0) {
+                  <div class="selected-services-bar">
+                    <div class="bar-summary">
+                      <div class="bar-count-badge">
+                        {{ bookingService.selectedServices().length }} {{ bookingService.selectedServices().length === 1 ? 'Treatment' : 'Treatments' }} Selected
+                      </div>
+                      <div class="bar-totals">
+                        <span class="total-duration">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16 14"></polyline>
+                          </svg>
+                          {{ bookingService.totalDuration() }} min total
+                        </span>
+                        <span class="dot-sep">•</span>
+                        <span class="total-price">₹{{ bookingService.totalPrice() }}</span>
+                      </div>
+                    </div>
+
+                    <div class="selected-tags-row">
+                      @for (srv of bookingService.selectedServices(); track srv.id) {
+                        <span class="service-chip-removable">
+                          <span>{{ srv.name }} (₹{{ srv.price }})</span>
+                          <button 
+                            type="button" 
+                            class="remove-chip-btn" 
+                            (click)="$event.stopPropagation(); removeService(srv.id)"
+                            title="Remove service">✕</button>
+                        </span>
+                      }
+                    </div>
+
+                    <div class="bar-action">
+                      <button 
+                        type="button" 
+                        class="btn btn-primary btn-lg continue-btn" 
+                        (click)="nextStep()">
+                        Continue to Date ({{ bookingService.selectedServices().length }} {{ bookingService.selectedServices().length === 1 ? 'Service' : 'Services' }}) ➔
+                      </button>
+                    </div>
+                  </div>
+                } @else {
+                  <div class="select-prompt-box">
+                    <span>Please select at least 1 treatment above to continue.</span>
+                  </div>
+                }
               </div>
             }
 
@@ -272,7 +340,7 @@ import { FormattedSlot } from '../../core/models/slot.model';
                   <span class="step-badge">Step 3 of 5</span>
                   <h2 class="step-title">Choose Time Slot</h2>
                   <p class="step-desc">
-                    30-minute booking capacity for <strong>{{ bookingService.state().serviceName }}</strong> on <strong>{{ bookingService.state().date }}</strong>.
+                    Showing available start times for <strong>{{ bookingService.selectedServiceNames() }}</strong> ({{ bookingService.totalDuration() }} min combined duration) on <strong>{{ bookingService.state().date }}</strong>.
                   </p>
                 </div>
 
@@ -399,14 +467,19 @@ import { FormattedSlot } from '../../core/models/slot.model';
                   </div>
 
                   <div class="summary-body">
-                    <div class="summary-item">
-                      <span class="item-label">Selected Ritual</span>
-                      <span class="item-value highlight">{{ bookingService.state().serviceName }}</span>
+                    <div class="summary-services-list">
+                      <div class="services-list-label">Selected Treatments ({{ bookingService.selectedServices().length }}):</div>
+                      @for (srv of bookingService.selectedServices(); track srv.id) {
+                        <div class="summary-service-row">
+                          <span class="srv-item-name">• {{ srv.name }} ({{ srv.duration_minutes }} min)</span>
+                          <span class="srv-item-price">₹{{ srv.price }}</span>
+                        </div>
+                      }
                     </div>
 
-                    <div class="summary-item">
-                      <span class="item-label">Duration & Price</span>
-                      <span class="item-value">{{ bookingService.state().serviceDuration }} min — ₹{{ bookingService.state().servicePrice }}</span>
+                    <div class="summary-item highlight-total">
+                      <span class="item-label">Total Duration & Amount</span>
+                      <span class="item-value highlight">{{ bookingService.totalDuration() }} min — ₹{{ bookingService.totalPrice() }}</span>
                     </div>
 
                     <div class="summary-item">
@@ -530,6 +603,14 @@ export class BookingComponent implements OnInit {
 
   selectService(service: SalonService): void {
     this.bookingService.selectService(service);
+  }
+
+  toggleService(service: SalonService): void {
+    this.bookingService.toggleService(service);
+  }
+
+  removeService(serviceId: string): void {
+    this.bookingService.removeService(serviceId);
   }
 
   onDateSelected(dateStr: string): void {

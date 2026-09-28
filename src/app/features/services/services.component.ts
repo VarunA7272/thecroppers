@@ -140,7 +140,7 @@ export class ServicesComponent implements OnInit {
   }
 
   onSelectService(service: SalonService): void {
-    this.bookingService.selectService(service);
+    this.bookingService.addService(service);
     this.router.navigate(['/book']);
   }
 }
