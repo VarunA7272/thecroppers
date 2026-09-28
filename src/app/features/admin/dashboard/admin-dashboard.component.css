@@ -17,6 +17,7 @@
 .dashboard-title {
   font-size: 2.2rem;
   margin-bottom: 4px;
+  color: var(--color-light);
 }
 
 .dashboard-subtitle {
@@ -51,8 +52,8 @@
 }
 
 .metric-card.needs-action {
-  border-color: rgba(197, 168, 128, 0.5);
-  background: rgba(197, 168, 128, 0.04);
+  border-color: rgba(181, 136, 64, 0.4);
+  background: rgba(181, 136, 64, 0.05);
 }
 
 .metric-top {
@@ -73,7 +74,7 @@
   width: 36px;
   height: 36px;
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.05);
+  background: #f4f0e8;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -81,13 +82,13 @@
 }
 
 .alert-icon {
-  color: var(--color-gold);
-  background: rgba(197, 168, 128, 0.12);
+  color: #8c621d;
+  background: rgba(181, 136, 64, 0.12);
 }
 
 .success-icon {
   color: var(--color-success);
-  background: rgba(52, 211, 153, 0.12);
+  background: rgba(21, 128, 61, 0.12);
 }
 
 .metric-value {
@@ -96,6 +97,7 @@
   font-weight: 700;
   line-height: 1.1;
   margin-bottom: 8px;
+  color: var(--color-light);
 }
 
 .text-success {
@@ -104,7 +106,7 @@
 
 .metric-hint {
   font-size: 0.78rem;
-  color: rgba(255, 255, 255, 0.45);
+  color: #78716c;
 }
 
 /* Two-column Section */
@@ -139,7 +141,7 @@
 }
 
 .view-link {
-  color: var(--color-gold);
+  color: var(--color-gold-light);
   font-size: 0.85rem;
   text-decoration: none;
   font-weight: 600;
@@ -162,16 +164,17 @@
   gap: 14px;
   padding: 12px 16px;
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid var(--color-border-subtle);
+  background: #ffffff;
+  border: 1px solid rgba(28, 25, 23, 0.08);
+  box-shadow: 0 1px 3px rgba(35, 30, 25, 0.03);
 }
 
 .staff-avatar {
   width: 38px;
   height: 38px;
   border-radius: 50%;
-  background: rgba(197, 168, 128, 0.15);
-  color: var(--color-gold);
+  background: rgba(181, 136, 64, 0.15);
+  color: #8c621d;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -204,7 +207,7 @@
 }
 
 .active-pill {
-  background: rgba(52, 211, 153, 0.1);
+  background: rgba(21, 128, 61, 0.1);
   color: var(--color-success);
 }
 
@@ -221,8 +224,9 @@
   gap: 16px;
   padding: 14px 16px;
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid var(--color-border-subtle);
+  background: #ffffff;
+  border: 1px solid rgba(28, 25, 23, 0.08);
+  box-shadow: 0 1px 3px rgba(35, 30, 25, 0.03);
   transition: all 0.2s ease;
 }
 
@@ -265,21 +269,22 @@
 
 .service-pill {
   font-size: 0.75rem;
-  background: rgba(255, 255, 255, 0.06);
+  background: #f4f0e8;
   padding: 2px 6px;
   border-radius: 4px;
-  color: var(--color-muted);
+  color: #57534e;
+  font-weight: 500;
 }
 
 .queue-phone {
   font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.5);
+  color: #78716c;
 }
 
 .assigned-tag {
   font-size: 0.78rem;
-  color: var(--color-gold-light);
-  background: rgba(197, 168, 128, 0.1);
+  color: #8c621d;
+  background: rgba(181, 136, 64, 0.1);
   padding: 4px 8px;
   border-radius: 4px;
   font-weight: 500;
@@ -288,7 +293,7 @@
 .unassigned-badge {
   font-size: 0.75rem;
   font-weight: 600;
-  color: #0e0e11;
+  color: #ffffff;
   background: var(--color-gold);
   padding: 3px 8px;
   border-radius: 4px;

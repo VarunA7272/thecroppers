@@ -6,8 +6,9 @@
 }
 
 .admin-nav-bar {
-  background: #111116;
-  border-bottom: 1px solid rgba(197, 168, 128, 0.2);
+  background: #ffffff;
+  border-bottom: 1px solid rgba(181, 136, 64, 0.2);
+  box-shadow: 0 1px 4px rgba(35, 30, 25, 0.04);
   padding: 12px 0;
   position: sticky;
   top: 76px;
@@ -32,22 +33,22 @@
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.14em;
-  background: rgba(197, 168, 128, 0.15);
+  background: rgba(181, 136, 64, 0.12);
   border: 1px solid var(--color-gold);
-  color: var(--color-gold-light);
+  color: #8c621d;
   padding: 3px 8px;
   border-radius: 4px;
 }
 
 .admin-badge.staff-badge {
-  background: rgba(52, 211, 153, 0.15);
+  background: rgba(21, 128, 61, 0.12);
   border-color: var(--color-success);
   color: var(--color-success);
 }
 
 .admin-title {
   font-size: 0.95rem;
-  color: rgba(255, 255, 255, 0.85);
+  color: #57534e;
 }
 
 .admin-title strong {
@@ -60,7 +61,7 @@
 }
 
 .admin-links a {
-  color: rgba(255, 255, 255, 0.7);
+  color: #57534e;
   text-decoration: none;
   font-size: 0.9rem;
   font-weight: 600;
@@ -72,7 +73,7 @@
 .admin-links a:hover,
 .admin-links a.active {
   color: var(--color-gold-light);
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(181, 136, 64, 0.1);
 }
 
 .admin-user-group {

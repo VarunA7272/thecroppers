@@ -17,6 +17,7 @@
 .page-title {
   font-size: 2.2rem;
   margin-bottom: 4px;
+  color: var(--color-light);
 }
 
 .page-subtitle {
@@ -48,11 +49,13 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  background: #ffffff;
 }
 
 .srv-card.inactive-card {
-  opacity: 0.5;
+  opacity: 0.6;
   border-style: dashed;
+  background: #faf8f5;
 }
 
 .srv-top {
@@ -66,7 +69,7 @@
   font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  color: var(--color-gold);
+  color: var(--color-gold-light);
   font-weight: 700;
 }
 
@@ -92,7 +95,7 @@
 .srv-desc {
   font-size: 0.88rem;
   line-height: 1.5;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--color-muted);
   min-height: 40px;
 }
 
@@ -112,8 +115,8 @@
 }
 
 .badge-inactive {
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--color-muted);
+  background: #f3f4f6;
+  color: #6b7280;
 }
 
 .card-actions {
@@ -125,14 +128,14 @@
 
 .delete-btn:hover {
   color: var(--color-danger);
-  border-color: rgba(239, 68, 68, 0.3);
+  border-color: rgba(220, 38, 38, 0.3);
 }
 
 /* Modals */
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.75);
+  background: rgba(28, 25, 23, 0.6);
   backdrop-filter: blur(6px);
   display: flex;
   align-items: center;
@@ -145,6 +148,9 @@
   width: 100%;
   max-width: 520px;
   padding: 32px;
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-md);
 }
 
 .modal-header {
@@ -156,6 +162,7 @@
 
 .modal-title {
   font-size: 1.5rem;
+  color: var(--color-light);
 }
 
 .close-btn {
@@ -188,7 +195,7 @@
   align-items: center;
   gap: 10px;
   font-size: 0.88rem;
-  color: rgba(255, 255, 255, 0.8);
+  color: #57534e;
   cursor: pointer;
 }
 
@@ -202,6 +209,7 @@
   font-size: 1rem;
   line-height: 1.6;
   margin-bottom: 24px;
+  color: #57534e;
 }
 
 .delete-confirm-btn {
