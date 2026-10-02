@@ -42,7 +42,7 @@ import { SalonService } from '../../../core/models/service.model';
 
       <!-- Owner End-of-Day Review & Reconciliation Banner (Superadmin Only) -->
       @if (adminService.isSuperadmin()) {
-        <div class="croppers-card eod-review-card">
+        <div *ngIf="false" class="croppers-card eod-review-card">
           <div class="eod-review-info">
             <div class="eod-title-row">
               <span class="eod-icon">📋</span>
