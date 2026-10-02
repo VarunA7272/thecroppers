@@ -68,7 +68,7 @@ import { AdminRole } from '../../../core/models/admin.model';
               placeholder="••••••••">
           </div>
 
-          <div class="login-actions">
+            <div class="login-actions">
             <button 
               type="submit" 
               class="btn btn-primary btn-block" 
@@ -79,40 +79,6 @@ import { AdminRole } from '../../../core/models/admin.model';
                 <span>Sign In as {{ selectedRole() === 'superadmin' ? 'Superadmin' : 'Staff' }}</span>
               }
             </button>
-
-            <!-- Quick Demo Sign-ins -->
-            <div class="demo-buttons-divider">
-              <span>Quick Evaluation Sign-in</span>
-            </div>
-
-            <div class="demo-actions-grid">
-              <button 
-                type="button" 
-                class="btn btn-outline btn-block demo-super-btn" 
-                (click)="onDemoLoginSuperadmin()">
-                🔑 Superadmin (Owner — Full Access)
-              </button>
-              <div class="staff-demo-row">
-                <button 
-                  type="button" 
-                  class="btn btn-ghost demo-staff-btn" 
-                  (click)="onDemoLoginStaffMember('staff-rahul', 'rahul@thecroppers.in')">
-                  ✂ Rahul (Hair)
-                </button>
-                <button 
-                  type="button" 
-                  class="btn btn-ghost demo-staff-btn" 
-                  (click)="onDemoLoginStaffMember('staff-amit', 'amit@thecroppers.in')">
-                  💈 Amit (Barber)
-                </button>
-                <button 
-                  type="button" 
-                  class="btn btn-ghost demo-staff-btn" 
-                  (click)="onDemoLoginStaffMember('staff-priya', 'priya@thecroppers.in')">
-                  🌸 Priya (Skin)
-                </button>
-              </div>
-            </div>
           </div>
         </form>
 
@@ -136,17 +102,12 @@ export class AdminLoginComponent {
   readonly errorMessage = signal<string | null>(null);
 
   loginForm: FormGroup = this.fb.group({
-    email: ['owner@thecroppers.in', [Validators.required, Validators.email]],
-    password: ['admin123', [Validators.required, Validators.minLength(6)]]
+    email: ['', [Validators.required, Validators.email]],
+    password: ['', [Validators.required, Validators.minLength(6)]]
   });
 
   setRole(role: AdminRole): void {
     this.selectedRole.set(role);
-    if (role === 'superadmin') {
-      this.loginForm.patchValue({ email: 'owner@thecroppers.in' });
-    } else {
-      this.loginForm.patchValue({ email: 'rahul@thecroppers.in' });
-    }
   }
 
   async onSubmit(): Promise<void> {
@@ -165,23 +126,5 @@ export class AdminLoginComponent {
       this.errorMessage.set(res.error || 'Failed to authenticate. Please check your credentials.');
     }
   }
-
-  async onDemoLoginSuperadmin(): Promise<void> {
-    this.selectedRole.set('superadmin');
-    this.loginForm.setValue({
-      email: 'owner@thecroppers.in',
-      password: 'demo-password'
-    });
-    await this.onSubmit();
-  }
-
-  async onDemoLoginStaffMember(staffId: string, email: string): Promise<void> {
-    this.selectedRole.set('staff');
-    this.loginForm.setValue({
-      email: email,
-      password: 'demo-password'
-    });
-    await this.adminService.login(email, 'demo-password', 'staff', staffId);
-    this.router.navigate(['/admin/dashboard']);
-  }
 }
+

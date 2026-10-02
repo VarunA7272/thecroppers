@@ -45,22 +45,24 @@ describe('App', () => {
     expect(compiled.querySelector('app-footer')).toBeTruthy();
   });
 
-  it('should hide header and footer when logged in as staff (Rahul)', async () => {
+  it('should show header and footer on customer pages even when logged in as staff (Rahul)', async () => {
     await adminService.login('rahul@thecroppers.in', 'password123', 'staff', 'staff-rahul');
+    await router.navigateByUrl('/');
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
     await fixture.whenStable();
 
     const app = fixture.componentInstance;
-    expect(app.showAppHeaderFooter).toBe(false);
+    expect(app.showAppHeaderFooter).toBe(true);
 
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('app-header')).toBeNull();
-    expect(compiled.querySelector('app-footer')).toBeNull();
+    expect(compiled.querySelector('app-header')).toBeTruthy();
+    expect(compiled.querySelector('app-footer')).toBeTruthy();
   });
 
-  it('should hide header and footer when logged in as superadmin', async () => {
+  it('should hide header and footer on /admin routes when logged in as superadmin', async () => {
     await adminService.login('owner@thecroppers.in', 'password123', 'superadmin');
+    await router.navigateByUrl('/admin/dashboard');
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
     await fixture.whenStable();
@@ -85,6 +87,25 @@ describe('App', () => {
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('app-header')).toBeNull();
     expect(compiled.querySelector('app-footer')).toBeNull();
+  });
+
+  it('should restore header and footer when navigating back from admin section to customer pages', async () => {
+    await router.navigateByUrl('/admin/login');
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const app = fixture.componentInstance;
+    expect(app.showAppHeaderFooter).toBe(false);
+
+    await router.navigateByUrl('/');
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(app.showAppHeaderFooter).toBe(true);
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('app-header')).toBeTruthy();
+    expect(compiled.querySelector('app-footer')).toBeTruthy();
   });
 });
 

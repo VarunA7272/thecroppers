@@ -110,21 +110,35 @@ export class AdminService {
   // --- AUTHENTICATION ---
 
   async login(email: string, password: string, forceRole?: 'superadmin' | 'staff', staffId?: string): Promise<{ success: boolean; error?: string }> {
+    const emailLower = email.toLowerCase().trim();
     if (this.supabase.isReady && this.supabase.clientInstance) {
       try {
         const { data, error } = await this.supabase.clientInstance.auth.signInWithPassword({
-          email,
+          email: emailLower,
           password
         });
 
         if (!error && data?.user) {
-          const role = forceRole || (data.user.user_metadata?.['role'] as 'superadmin' | 'staff') || 'superadmin';
+          const userMetaRole = data.user.user_metadata?.['role'] as 'superadmin' | 'staff' | undefined;
+          const role = forceRole || userMetaRole || (emailLower === 'thecropperz@gmail.com' || emailLower.includes('superadmin') || emailLower.includes('owner') ? 'superadmin' : 'staff');
+          
+          let resolvedStaffId = staffId || data.user.user_metadata?.['staff_id'];
+          if (role === 'staff' && !resolvedStaffId) {
+            const staffMembers = this.staffStore();
+            const userName = (data.user.user_metadata?.['name'] || '').toLowerCase();
+            const matched = staffMembers.find(s => 
+              (userName && s.name.toLowerCase().includes(userName)) ||
+              (emailLower && emailLower.includes(s.name.toLowerCase()))
+            );
+            resolvedStaffId = matched ? matched.id : data.user.id;
+          }
+
           const user: AdminUser = {
             id: data.user.id,
-            email: data.user.email || email,
+            email: data.user.email || emailLower,
             role,
-            name: data.user.user_metadata?.['name'] || (role === 'superadmin' ? 'Superadmin' : 'Staff Stylist'),
-            staffId: staffId || data.user.user_metadata?.['staff_id']
+            name: data.user.user_metadata?.['name'] || (role === 'superadmin' ? 'Alok (Superadmin)' : 'Staff Stylist'),
+            staffId: role === 'staff' ? resolvedStaffId : undefined
           };
           this.currentUser.set(user);
           localStorage.setItem('croppers_admin_user', JSON.stringify(user));
@@ -137,8 +151,7 @@ export class AdminService {
 
     // Demo Mode Sign-in
     if (email && password) {
-      const emailLower = email.toLowerCase();
-      const role = forceRole || (emailLower.includes('superadmin') || emailLower.includes('owner') || emailLower.includes('manager') ? 'superadmin' : 'staff');
+      const role = forceRole || (emailLower === 'thecropperz@gmail.com' || emailLower.includes('superadmin') || emailLower.includes('owner') || emailLower.includes('manager') ? 'superadmin' : 'staff');
       const staffMembers = this.staffStore();
       let assignedStaff: StaffMember | undefined;
 
@@ -149,12 +162,12 @@ export class AdminService {
       }
 
       const name = role === 'superadmin' 
-        ? 'Owner / Superadmin' 
+        ? 'Alok (Superadmin)' 
         : (assignedStaff ? `${assignedStaff.name} (${assignedStaff.role})` : 'Staff Member');
 
       const demoUser: AdminUser = {
         id: role === 'superadmin' ? 'admin-super-1' : (assignedStaff ? `user-${assignedStaff.id}` : 'staff-user-1'),
-        email: email,
+        email: emailLower,
         role: role,
         name: name,
         staffId: role === 'staff' ? (assignedStaff?.id || staffId || 'staff-default') : undefined
@@ -620,8 +633,7 @@ export class AdminService {
             *,
             customers (name, phone),
             appointment_services (
-              price,
-              services (id, name, duration_minutes, price, service_categories(name)),
+              services (id, name, duration_minutes, price),
               appointment_service_staff (staff (*))
             )
           `)
@@ -644,8 +656,8 @@ export class AdminService {
               id: as.services?.id || 'srv-unknown',
               name: as.services?.name || 'Service',
               durationMinutes: as.services?.duration_minutes || 30,
-              price: Number(as.price || as.services?.price || 0),
-              categoryName: as.services?.service_categories?.name || 'General'
+              price: Number(as.services?.price || apt.total_price || 0),
+              categoryName: 'General'
             }));
 
             const assignedStaff: StaffMember[] = [];
@@ -666,6 +678,14 @@ export class AdminService {
                 }
               });
             });
+
+            if (assignedStaff.length === 0 && apt.booked_by_staff_name) {
+              const staffNames = apt.booked_by_staff_name.split(',').map((n: string) => n.trim().toLowerCase());
+              const matched = this.staffStore().filter(s => staffNames.includes(s.name.toLowerCase()));
+              if (matched.length > 0) {
+                assignedStaff.push(...matched);
+              }
+            }
 
             const primaryService = serviceItems[0] || {
               id: 'srv-haircut',
@@ -930,30 +950,82 @@ export class AdminService {
 
     const staffList = Array.isArray(staffOrList) ? staffOrList : [staffOrList];
 
-    if (this.supabase.isReady && this.supabase.clientInstance) {
+    const isUuid = (id?: string | null): boolean => !!id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
+    if (this.supabase.isReady && this.supabase.clientInstance && isUuid(appointmentId)) {
       try {
+        let aptServiceId: string | null = null;
         const { data: aptServices } = await this.supabase.clientInstance
           .from('appointment_services')
           .select('id')
-          .eq('appointment_id', appointmentId)
-          .limit(1);
+          .eq('appointment_id', appointmentId);
 
         if (aptServices && aptServices.length > 0) {
-          const aptServiceId = aptServices[0].id;
+          aptServiceId = aptServices[0].id;
+        } else {
+          // If no junction row exists yet, look up a real service UUID
+          const targetApt = this.appointmentsStore().find(a => a.id === appointmentId);
+          let srvId = targetApt?.service?.id || targetApt?.services?.[0]?.id;
+
+          if (!isUuid(srvId)) {
+            const realService = this.servicesStore().find(s => isUuid(s.id));
+            if (realService) {
+              srvId = realService.id;
+            } else {
+              const { data: dbSrv } = await this.supabase.clientInstance
+                .from('services')
+                .select('id')
+                .eq('salon_id', this.salonId)
+                .limit(1)
+                .maybeSingle();
+              srvId = dbSrv?.id || null;
+            }
+          }
+
+          if (srvId && isUuid(srvId)) {
+            const { data: newSrvRow } = await this.supabase.clientInstance
+              .from('appointment_services')
+              .insert({
+                appointment_id: appointmentId,
+                service_id: srvId
+              })
+              .select('id')
+              .maybeSingle();
+
+            if (newSrvRow?.id) {
+              aptServiceId = newSrvRow.id;
+            }
+          }
+        }
+
+        if (aptServiceId && isUuid(aptServiceId)) {
           await this.supabase.clientInstance
             .from('appointment_service_staff')
             .delete()
             .eq('appointment_service_id', aptServiceId);
 
-          if (staffList.length > 0) {
-            const inserts = staffList.map(s => ({
+          const validStaffInserts = staffList
+            .filter(s => isUuid(s.id))
+            .map(s => ({
               appointment_service_id: aptServiceId,
               staff_id: s.id
             }));
+
+          if (validStaffInserts.length > 0) {
             await this.supabase.clientInstance
               .from('appointment_service_staff')
-              .insert(inserts);
+              .insert(validStaffInserts);
           }
+        }
+
+        // Also update booked_by_staff_name on appointments table for fast fallback
+        if (staffList.length > 0) {
+          await this.supabase.clientInstance
+            .from('appointments')
+            .update({
+              booked_by_staff_name: staffList.map(s => s.name).join(', ')
+            })
+            .eq('id', appointmentId);
         }
       } catch (err) {
         console.warn('[AdminService] Supabase assignStaff error:', err);
@@ -1090,6 +1162,32 @@ export class AdminService {
     const primaryService = services[0];
     const totalDuration = services.reduce((acc, s) => acc + s.durationMinutes, 0);
     const combinedName = services.length > 1 ? services.map(s => s.name).join(' + ') : primaryService.name;
+
+    // 1. Persist staff assignments
+    await this.assignStaff(appointmentId, payload.assignedStaff);
+
+    // 2. Persist appointment charges & review status in Supabase
+    if (this.supabase.isReady && this.supabase.clientInstance) {
+      try {
+        const updateFields: Record<string, any> = {
+          total_price: payload.finalPrice,
+          owner_approval_status: payload.approveNow ? 'approved' : 'pending'
+        };
+        if (payload.priceAdjustmentNote) {
+          updateFields['custom_price_note'] = payload.priceAdjustmentNote.trim();
+        }
+        if (payload.notes !== undefined) {
+          updateFields['notes'] = payload.notes;
+        }
+
+        await this.supabase.clientInstance
+          .from('appointments')
+          .update(updateFields)
+          .eq('id', appointmentId);
+      } catch (err) {
+        console.warn('[AdminService] Supabase reviewAndEditAppointment update note:', err);
+      }
+    }
 
     this.appointmentsStore.update(items =>
       items.map(apt => {

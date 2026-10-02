@@ -23,19 +23,16 @@ export class App {
 
   readonly isAdminRoute = computed(() => {
     const url = this.currentUrl();
-    return url.startsWith('/admin');
-  });
-
-  readonly isStaffOrAdminLoggedIn = computed(() => {
-    return this.adminService.isAuthenticated();
+    const cleanUrl = url.startsWith('/') ? url : '/' + url;
+    return cleanUrl.startsWith('/admin');
   });
 
   /**
-   * Header and footer are hidden when logged in as admin/staff
-   * or when navigating inside the /admin portal sections.
+   * Header and footer are shown on customer-facing routes
+   * and hidden inside the /admin portal sections (/admin/*, /admin/login, etc.).
    */
   readonly showHeaderFooterSignal = computed(() => {
-    return !this.isAdminRoute() && !this.isStaffOrAdminLoggedIn();
+    return !this.isAdminRoute();
   });
 
   get showAppHeaderFooter(): boolean {

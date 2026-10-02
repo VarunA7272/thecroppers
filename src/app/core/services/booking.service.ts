@@ -422,7 +422,6 @@ export class BookingService {
         // 2. Insert into appointments table
         const insertPayload: Record<string, any> = {
           salon_id: this.salonId,
-          service_id: payload.serviceId,
           date: payload.date,
           appointment_date: payload.date,
           start_time: payload.startTime,
@@ -432,7 +431,8 @@ export class BookingService {
           booking_source: 'online',
           status: 'booked',
           reference_number: refNumber,
-          owner_approval_status: 'approved'
+          owner_approval_status: 'approved',
+          notes: `Services: ${combinedName}`
         };
 
         if (customerId) {
@@ -463,11 +463,15 @@ export class BookingService {
         // 3. Link appointment services if junction table exists
         if (payload.serviceIds && payload.serviceIds.length > 0) {
           try {
-            const srvRows = payload.serviceIds.map(sid => ({
-              appointment_id: savedAppointmentId,
-              service_id: sid
-            }));
-            await this.supabase.clientInstance.from('appointment_services').insert(srvRows);
+            const isUuid = (id?: string) => !!id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+            const validServiceIds = payload.serviceIds.filter(isUuid);
+            if (validServiceIds.length > 0) {
+              const srvRows = validServiceIds.map(sid => ({
+                appointment_id: savedAppointmentId,
+                service_id: sid
+              }));
+              await this.supabase.clientInstance.from('appointment_services').insert(srvRows);
+            }
           } catch (junctionErr) {
             console.warn('[BookingService] appointment_services insert note:', junctionErr);
           }

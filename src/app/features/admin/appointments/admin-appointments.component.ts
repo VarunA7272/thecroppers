@@ -817,7 +817,7 @@ export class AdminAppointmentsComponent implements OnInit {
   readonly staffList = signal<StaffMember[]>([]);
   readonly servicesList = signal<SalonService[]>([]);
 
-  readonly selectedDateMode = signal<'today' | 'tomorrow' | 'all' | 'custom'>('today');
+  readonly selectedDateMode = signal<'today' | 'tomorrow' | 'all' | 'custom'>('all');
   readonly selectedCustomDate = signal<string>(new Date().toISOString().split('T')[0]);
   readonly selectedStatus = signal<'all' | 'booked' | 'completed' | 'cancelled' | 'no_show'>('all');
   readonly unassignedOnly = signal<boolean>(false);
@@ -1003,7 +1003,7 @@ export class AdminAppointmentsComponent implements OnInit {
   }
 
   resetFilters(): void {
-    this.selectedDateMode.set('today');
+    this.selectedDateMode.set('all');
     this.selectedStatus.set('all');
     this.unassignedOnly.set(false);
     this.selectedStaffId.set('');
