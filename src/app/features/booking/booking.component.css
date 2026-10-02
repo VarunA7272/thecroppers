@@ -461,6 +461,16 @@
   letter-spacing: 0.05em;
 }
 
+.slot-btn.available .slot-status-tag {
+  color: #15803d;
+  font-weight: 600;
+}
+
+.slot-btn.unavailable .slot-status-tag {
+  color: #b91c1c;
+  font-weight: 500;
+}
+
 .empty-slots-box {
   padding: 40px;
   text-align: center;

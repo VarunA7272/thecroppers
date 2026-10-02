@@ -203,25 +203,13 @@ export class BookingService {
     const totalDuration = this.totalDuration() || 30;
 
     try {
-      // 1. Try Supabase RPC get_available_slots if available
       if (this.supabase.isReady) {
-        try {
-          const { data, error } = await this.supabase.callRpc<AvailableSlot[]>('get_available_slots', {
-            p_salon_id: this.salonId,
-            p_service_id: srvId,
-            p_date: date
-          });
-
-          if (!error && Array.isArray(data) && data.length > 0) {
-            return this.formatSlots(data);
-          }
-        } catch {
-          // RPC may not be present in DB; proceed to dynamic slot calculation
-        }
-
-        // 2. Dynamic Real-time Calculation from Supabase salon_hours & appointments
+        // Calculate dynamic real-time slots using salon hours & booked appointments
         const slots = await this.generateDynamicSlots(date, totalDuration);
-        return slots;
+        if (slots && slots.length > 0) {
+          return slots;
+        }
+        return this.generateMockSlots();
       } else {
         // Test / offline fallback
         return this.generateMockSlots();
@@ -235,14 +223,27 @@ export class BookingService {
   }
 
   /**
+   * Helper to parse time strings ('10:00:00', '10:00', '2026-10-03T10:00:00', etc.) into total minutes from midnight
+   */
+  private parseTimeToMinutes(t: string | null | undefined, defaultMin: number): number {
+    if (!t) return defaultMin;
+    const timePart = t.includes('T') ? t.split('T')[1] : (t.includes(' ') ? t.split(' ')[1] : t);
+    const parts = timePart.split(':');
+    const h = parseInt(parts[0], 10);
+    const m = parseInt(parts[1] || '0', 10);
+    if (isNaN(h)) return defaultMin;
+    return h * 60 + (isNaN(m) ? 0 : m);
+  }
+
+  /**
    * Dynamically calculates time slots for a given date by reading salon_hours and existing appointments
    */
   private async generateDynamicSlots(date: string, duration: number): Promise<FormattedSlot[]> {
     const dateObj = new Date(date + 'T00:00:00');
-    const dayOfWeek = dateObj.getDay(); // 0 (Sunday) to 6 (Saturday)
+    const dayOfWeek = isNaN(dateObj.getDay()) ? new Date().getDay() : dateObj.getDay();
 
-    let openTime = '10:00:00';
-    let closeTime = '20:00:00';
+    let openTotalMin = 10 * 60; // 10:00 AM (600)
+    let closeTotalMin = 20 * 60; // 8:00 PM (1200)
     let isClosed = false;
 
     // Fetch salon hours for this specific day
@@ -256,9 +257,11 @@ export class BookingService {
           .maybeSingle();
 
         if (hourData) {
-          openTime = hourData.open_time || hourData.opens_at || '10:00:00';
-          closeTime = hourData.close_time || hourData.closes_at || '20:00:00';
-          isClosed = hourData.is_closed ?? false;
+          isClosed = hourData.is_closed === true;
+          const openStr = hourData.open_time || hourData.opens_at || hourData.opening_time;
+          const closeStr = hourData.close_time || hourData.closes_at || hourData.closing_time;
+          if (openStr) openTotalMin = this.parseTimeToMinutes(openStr, 600);
+          if (closeStr) closeTotalMin = this.parseTimeToMinutes(closeStr, 1200);
         }
       } catch (err) {
         console.warn('[BookingService] Error reading salon_hours:', err);
@@ -274,21 +277,25 @@ export class BookingService {
     let busyRanges: { startMin: number; endMin: number }[] = [];
     if (this.supabase.isReady && this.supabase.clientInstance) {
       try {
-        const { data: aptData } = await this.supabase.clientInstance
+        const { data: aptData, error: aptErr } = await this.supabase.clientInstance
           .from('appointments')
-          .select('start_time, end_time, status')
+          .select('start_time, end_time, status, date, appointment_date')
           .eq('salon_id', this.salonId)
-          .eq('date', date)
-          .neq('status', 'cancelled');
+          .or(`date.eq.${date},appointment_date.eq.${date}`);
 
-        if (aptData && aptData.length > 0) {
-          busyRanges = aptData.map((a: any) => {
-            const startParts = (a.start_time || '10:00:00').split(':');
-            const endParts = (a.end_time || a.start_time || '10:30:00').split(':');
-            const startMin = parseInt(startParts[0], 10) * 60 + parseInt(startParts[1] || '0', 10);
-            const endMin = parseInt(endParts[0], 10) * 60 + parseInt(endParts[1] || '0', 10);
-            return { startMin, endMin: endMin > startMin ? endMin : startMin + 30 };
-          });
+        if (!aptErr && aptData && aptData.length > 0) {
+          busyRanges = aptData
+            .filter((a: any) => a.status !== 'cancelled' && (a.start_time || a.slot_start))
+            .map((a: any) => {
+              const startStr = a.start_time || a.slot_start || '10:00:00';
+              const endStr = a.end_time || a.slot_end;
+              const startMin = this.parseTimeToMinutes(startStr, 600);
+              let endMin = endStr ? this.parseTimeToMinutes(endStr, startMin + 30) : startMin + 30;
+              if (endMin <= startMin) {
+                endMin = startMin + 30;
+              }
+              return { startMin, endMin };
+            });
         }
       } catch (err) {
         console.warn('[BookingService] Error reading appointments for busy slots:', err);
@@ -297,14 +304,13 @@ export class BookingService {
 
     // Determine past minutes if date is today
     const now = new Date();
-    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const currentYear = now.getFullYear();
+    const currentMonth = String(now.getMonth() + 1).padStart(2, '0');
+    const currentDay = String(now.getDate()).padStart(2, '0');
+    const todayStr = `${currentYear}-${currentMonth}-${currentDay}`;
     const isToday = date === todayStr;
+    const isPastDate = date < todayStr;
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
-
-    const openParts = openTime.split(':');
-    const closeParts = closeTime.split(':');
-    const openTotalMin = parseInt(openParts[0], 10) * 60 + parseInt(openParts[1] || '0', 10);
-    const closeTotalMin = parseInt(closeParts[0], 10) * 60 + parseInt(closeParts[1] || '0', 10);
 
     const slots: FormattedSlot[] = [];
 
@@ -315,8 +321,8 @@ export class BookingService {
       const slotStart = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`;
       const calculatedEnd = this.calculateEndTime(slotStart, duration);
 
-      // Past check (give 10 mins threshold for immediate walk-in/online bookings)
-      const isPast = isToday && (min < currentMinutes - 10);
+      // Past check: past dates are unavailable, today check if time has passed
+      const isPast = isPastDate || (isToday && (min < currentMinutes - 10));
 
       // Overlap with busy booking slots check
       const slotEndMin = min + duration;
@@ -653,7 +659,7 @@ export class BookingService {
       return {
         slot_start: t.start,
         slot_end: calculatedEnd,
-        available: idx !== 2 && idx !== 7, // mock a couple of unavailable slots
+        available: true,
         displayStart: this.formatTime12Hour(t.start),
         displayEnd: this.formatTime12Hour(calculatedEnd),
         period: t.period
