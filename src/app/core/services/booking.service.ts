@@ -428,7 +428,6 @@ export class BookingService {
           start_time: payload.startTime,
           end_time: endTime,
           total_price: totalPrice,
-          price: totalPrice,
           payment_method: 'cash',
           booking_source: 'online',
           status: 'booked',
