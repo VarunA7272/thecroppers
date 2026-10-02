@@ -455,17 +455,28 @@ export class AdminService {
   async getServices(): Promise<SalonService[]> {
     if (this.supabase.isReady && this.supabase.clientInstance) {
       try {
-        const { data, error } = await this.supabase.clientInstance
-          .from('services')
-          .select('*, service_categories(name)')
-          .eq('salon_id', this.salonId);
+        const [servicesRes, categoriesRes] = await Promise.all([
+          this.supabase.clientInstance
+            .from('services')
+            .select('*')
+            .eq('salon_id', this.salonId),
+          this.supabase.clientInstance
+            .from('service_categories')
+            .select('id, name')
+            .eq('salon_id', this.salonId)
+        ]);
 
-        if (!error && data && data.length > 0) {
-          const mapped: SalonService[] = data.map((item: any) => ({
+        const catMap = new Map<string, string>();
+        if (!categoriesRes.error && categoriesRes.data) {
+          categoriesRes.data.forEach((c: any) => catMap.set(c.id, c.name));
+        }
+
+        if (!servicesRes.error && servicesRes.data) {
+          const mapped: SalonService[] = servicesRes.data.map((item: any) => ({
             id: item.id,
             salon_id: item.salon_id,
             category_id: item.category_id,
-            category_name: item.service_categories?.name || 'General',
+            category_name: (item.category_id ? catMap.get(item.category_id) : null) || item.category_name || 'General',
             name: item.name,
             description: item.description,
             duration_minutes: item.duration_minutes,

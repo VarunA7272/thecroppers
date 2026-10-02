@@ -43,6 +43,12 @@ import { ScrollRevealDirective } from '../../core/directives/scroll-reveal.direc
               <div class="spinner"></div>
               <p>Loading treatments from Supabase...</p>
             </div>
+          } @else if (categoriesWithServices().length === 0) {
+            <div class="empty-services-state text-center" style="padding: 48px 24px; background: #faf8f5; border-radius: 8px; border: 1px dashed rgba(181, 136, 64, 0.3); margin: 32px 0;">
+              <h3 style="font-size: 1.25rem; color: #1c1917; margin-bottom: 8px;">No Services Listed Yet</h3>
+              <p style="color: #78716c; font-size: 0.95rem; margin-bottom: 20px;">Treatments will appear here once added in the Admin Panel.</p>
+              <a routerLink="/admin/login" class="btn btn-outline" style="display: inline-block;">Go to Admin Panel</a>
+            </div>
           } @else {
             @for (catGroup of categoriesWithServices(); track catGroup.category.id) {
               <div [id]="catGroup.category.name.toLowerCase()" class="category-group-block">
@@ -54,46 +60,52 @@ import { ScrollRevealDirective } from '../../core/directives/scroll-reveal.direc
                   }
                 </div>
 
-                <div class="services-list-grid">
-                  @for (service of catGroup.services; track service.id; let idx = $index) {
-                    <div class="croppers-card service-item-card" appScrollReveal revealAnimation="fade-up" [revealDelay]="(idx % 4) * 80">
-                      @if (service.image_url) {
-                        <div class="service-media-thumb">
-                          <img [src]="service.image_url" [alt]="service.name" loading="lazy" />
-                        </div>
-                      }
-                      <div class="service-info-col">
-                        <div class="service-title-row">
-                          <h3 class="service-title">{{ service.name }}</h3>
-                          <div class="service-price-pill">
-                            <span class="price-val">₹{{ service.price }}</span>
+                @if (catGroup.services.length === 0) {
+                  <div style="padding: 24px; background: #faf8f5; border-radius: 8px; border: 1px dashed rgba(181,136,64,0.3); text-align: center; color: #78716c; margin-bottom: 32px;">
+                    <p>No treatments added under <strong>{{ catGroup.category.name }}</strong> yet.</p>
+                  </div>
+                } @else {
+                  <div class="services-list-grid">
+                    @for (service of catGroup.services; track service.id; let idx = $index) {
+                      <div class="croppers-card service-item-card" appScrollReveal revealAnimation="fade-up" [revealDelay]="(idx % 4) * 80">
+                        @if (service.image_url) {
+                          <div class="service-media-thumb">
+                            <img [src]="service.image_url" [alt]="service.name" loading="lazy" />
+                          </div>
+                        }
+                        <div class="service-info-col">
+                          <div class="service-title-row">
+                            <h3 class="service-title">{{ service.name }}</h3>
+                            <div class="service-price-pill">
+                              <span class="price-val">₹{{ service.price }}</span>
+                            </div>
+                          </div>
+
+                          @if (service.description) {
+                            <p class="service-description">{{ service.description }}</p>
+                          }
+
+                          <div class="service-specs">
+                            <span class="spec-pill">
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 16 14"></polyline>
+                              </svg>
+                              {{ service.duration_minutes }} Minutes
+                            </span>
+                            <span class="spec-pill spec-dot">Capacity Protected</span>
                           </div>
                         </div>
 
-                        @if (service.description) {
-                          <p class="service-description">{{ service.description }}</p>
-                        }
-
-                        <div class="service-specs">
-                          <span class="spec-pill">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
-                              <circle cx="12" cy="12" r="10"></circle>
-                              <polyline points="12 6 12 12 16 14"></polyline>
-                            </svg>
-                            {{ service.duration_minutes }} Minutes
-                          </span>
-                          <span class="spec-pill spec-dot">Capacity Protected</span>
+                        <div class="service-action-col">
+                          <button type="button" class="btn btn-primary" (click)="onSelectService(service)">
+                            Book Service
+                          </button>
                         </div>
                       </div>
-
-                      <div class="service-action-col">
-                        <button type="button" class="btn btn-primary" (click)="onSelectService(service)">
-                          Book Service
-                        </button>
-                      </div>
-                    </div>
-                  }
-                </div>
+                    }
+                  </div>
+                }
               </div>
             }
           }
