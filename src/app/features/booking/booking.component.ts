@@ -648,13 +648,15 @@ export class BookingComponent implements OnInit {
 
   async confirmBooking(): Promise<void> {
     const res = await this.bookingService.submitBooking();
-    if (!res.success && res.message?.includes('just booked')) {
-      // Re-fetch slots if contention occurred
-      const state = this.bookingService.state();
-      if (state.date && state.serviceId) {
-        const slots = await this.bookingService.fetchAvailableSlots(state.date, state.serviceId);
-        this.availableSlots.set(slots);
-        this.currentStep.set(3);
+    if (!res.success) {
+      if (res.message?.toLowerCase().includes('already booked') || res.message?.toLowerCase().includes('no longer available')) {
+        // Re-fetch slots if contention occurred
+        const state = this.bookingService.state();
+        if (state.date && state.serviceId) {
+          const slots = await this.bookingService.fetchAvailableSlots(state.date, state.serviceId);
+          this.availableSlots.set(slots);
+          this.currentStep.set(3);
+        }
       }
     }
   }

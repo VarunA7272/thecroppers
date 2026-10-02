@@ -384,52 +384,11 @@ export class BookingService {
     };
 
     try {
-      if (this.supabase.isReady) {
-        // 1. Try RPC book_appointment
+      if (this.supabase.isReady && this.supabase.clientInstance) {
+        // 1. Ensure or find customer record
+        let customerId: string | null = null;
         try {
-          const { data, error } = await this.supabase.callRpc<any>('book_appointment', {
-            p_salon_id: payload.salonId,
-            p_service_id: payload.serviceId,
-            p_date: payload.date,
-            p_start_time: payload.startTime,
-            p_customer_name: payload.customerName,
-            p_customer_phone: payload.customerPhone
-          });
-
-          if (!error && data) {
-            const bookingResult: BookingResponse = {
-              success: true,
-              appointmentId: data?.id || data?.appointment_id || (typeof data === 'string' ? data : 'CROPPERS-' + Math.random().toString(36).substring(2, 8).toUpperCase()),
-              referenceNumber: data?.reference_number || 'TCP-' + Math.floor(100000 + Math.random() * 900000),
-              status: 'booked',
-              serviceName: combinedName,
-              services: currentState.selectedServices.map(s => ({
-                id: s.id,
-                name: s.name,
-                price: s.price,
-                duration_minutes: s.duration_minutes
-              })),
-              totalPrice,
-              totalDuration,
-              date: currentState.date || undefined,
-              slotStart: currentState.slotStart || undefined,
-              slotEnd: currentState.slotEnd || undefined,
-              customerName: currentState.customerName,
-              customerPhone: currentState.customerPhone,
-              message: 'Your appointment has been booked successfully.'
-            };
-
-            this.confirmedBooking.set(bookingResult);
-            return bookingResult;
-          }
-        } catch (rpcErr) {
-          console.warn('[BookingService] RPC book_appointment fallback to direct insert:', rpcErr);
-        }
-
-        // 2. Direct Supabase insert fallback
-        let customerId: string | undefined;
-        try {
-          const { data: existingCust } = await this.supabase.clientInstance!
+          const { data: existingCust } = await this.supabase.clientInstance
             .from('customers')
             .select('id')
             .eq('phone', payload.customerPhone)
@@ -438,7 +397,7 @@ export class BookingService {
           if (existingCust?.id) {
             customerId = existingCust.id;
           } else {
-            const { data: newCust } = await this.supabase.clientInstance!
+            const { data: newCust, error: custErr } = await this.supabase.clientInstance
               .from('customers')
               .insert({
                 salon_id: this.salonId,
@@ -447,63 +406,79 @@ export class BookingService {
                 phone: payload.customerPhone
               })
               .select('id')
-              .single();
+              .maybeSingle();
 
-            if (newCust?.id) {
+            if (!custErr && newCust?.id) {
               customerId = newCust.id;
             }
           }
         } catch (custErr) {
-          console.warn('[BookingService] Customer creation fallback:', custErr);
+          console.warn('[BookingService] Customer check/insert note:', custErr);
         }
 
         const refNumber = 'TCP-' + Math.floor(100000 + Math.random() * 900000);
         const endTime = this.calculateEndTime(payload.startTime, totalDuration);
 
-        let appointmentId = 'apt-' + Math.random().toString(36).substring(2, 9);
-        try {
-          const { data: aptData } = await this.supabase.clientInstance!
-            .from('appointments')
-            .insert({
-              salon_id: this.salonId,
-              customer_id: customerId,
-              date: payload.date,
-              start_time: payload.startTime,
-              end_time: endTime,
-              total_price: totalPrice,
-              payment_method: 'cash',
-              booking_source: 'online',
-              status: 'booked',
-              reference_number: refNumber,
-              owner_approval_status: 'approved'
-            })
-            .select('id')
-            .single();
+        // 2. Insert into appointments table
+        const insertPayload: Record<string, any> = {
+          salon_id: this.salonId,
+          service_id: payload.serviceId,
+          date: payload.date,
+          appointment_date: payload.date,
+          start_time: payload.startTime,
+          end_time: endTime,
+          total_price: totalPrice,
+          price: totalPrice,
+          payment_method: 'cash',
+          booking_source: 'online',
+          status: 'booked',
+          reference_number: refNumber,
+          owner_approval_status: 'approved'
+        };
 
-          if (aptData?.id) {
-            appointmentId = aptData.id;
-          }
-        } catch (aptErr) {
-          console.warn('[BookingService] Direct appointment insert:', aptErr);
+        if (customerId) {
+          insertPayload['customer_id'] = customerId;
         }
 
-        // Insert appointment_services records if table exists
+        const { data: aptData, error: aptErr } = await this.supabase.clientInstance
+          .from('appointments')
+          .insert(insertPayload)
+          .select('id, reference_number')
+          .single();
+
+        // STRICT CHECK: Stop immediately if database insert failed
+        if (aptErr || !aptData?.id) {
+          console.error('[BookingService] Failed to insert appointment into Supabase:', aptErr);
+          const userErrMsg = this.normalizeBookingError(aptErr || 'Could not save appointment in database.');
+          this.errorMessage.set(userErrMsg);
+          this.confirmedBooking.set(null);
+          return {
+            success: false,
+            message: userErrMsg
+          };
+        }
+
+        const savedAppointmentId = aptData.id;
+        const savedRefNumber = aptData.reference_number || refNumber;
+
+        // 3. Link appointment services if junction table exists
         if (payload.serviceIds && payload.serviceIds.length > 0) {
           try {
             const srvRows = payload.serviceIds.map(sid => ({
-              appointment_id: appointmentId,
+              appointment_id: savedAppointmentId,
               service_id: sid
             }));
-            await this.supabase.clientInstance!.from('appointment_services').insert(srvRows);
-          } catch {
-            // Ignore if junction table is optional
+            await this.supabase.clientInstance.from('appointment_services').insert(srvRows);
+          } catch (junctionErr) {
+            console.warn('[BookingService] appointment_services insert note:', junctionErr);
           }
         }
 
+        // 4. Confirmed booking ONLY after Supabase successfully returned the new record
         const bookingResult: BookingResponse = {
           success: true,
-          appointmentId: appointmentId,
-          referenceNumber: refNumber,
+          appointmentId: savedAppointmentId,
+          referenceNumber: savedRefNumber,
           status: 'booked',
           serviceName: combinedName,
           services: currentState.selectedServices.map(s => ({
@@ -553,8 +528,9 @@ export class BookingService {
       }
     } catch (err: any) {
       console.error('[BookingService] Unexpected error booking appointment:', err);
-      const userMessage = 'We could not complete your booking at this time. Please try again or call us at +917848827245.';
+      const userMessage = this.normalizeBookingError(err);
       this.errorMessage.set(userMessage);
+      this.confirmedBooking.set(null);
       return {
         success: false,
         message: userMessage
@@ -587,17 +563,17 @@ export class BookingService {
   }
 
   private normalizeBookingError(error: any): string {
-    const msg = error?.message || error?.details || '';
-    if (msg.toLowerCase().includes('no longer available') || msg.toLowerCase().includes('already booked')) {
-      return 'Sorry, this slot was just booked by someone else. Please choose another time.';
+    const msg = error?.message || error?.details || (typeof error === 'string' ? error : '');
+    if (!msg) {
+      return 'Unable to complete your reservation. Please try again or call +91 78488 27245.';
     }
-    if (msg.includes('closed') || msg.toLowerCase().includes('salon is closed')) {
+    if (msg.toLowerCase().includes('no longer available') || msg.toLowerCase().includes('already booked')) {
+      return 'Sorry, this time slot was just booked by someone else. Please choose another time.';
+    }
+    if (msg.toLowerCase().includes('closed')) {
       return 'The salon is closed on this date.';
     }
-    if (msg.includes('service') && msg.includes('unavailable')) {
-      return 'This service is currently unavailable.';
-    }
-    return 'Unable to secure booking at this time. Please select another time or call +917848827245.';
+    return `Unable to complete booking: ${msg}`;
   }
 
   private formatSlots(rawSlots: AvailableSlot[]): FormattedSlot[] {
