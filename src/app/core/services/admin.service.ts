@@ -13,9 +13,11 @@ import {
   AppointmentFilter,
   CreateServicePayload,
   UpdateServicePayload,
+  CreateCategoryPayload,
+  UpdateCategoryPayload,
   AppointmentServiceItem
 } from '../models/admin.model';
-import { SalonService } from '../models/service.model';
+import { SalonService, ServiceCategory } from '../models/service.model';
 import { SalonOpeningHour, Salon } from '../models/salon.model';
 import { environment } from '../../../environments/environment';
 
@@ -35,456 +37,32 @@ export class AdminService {
   readonly isStaff = computed(() => this.currentUser()?.role === 'staff');
   readonly currentStaffId = computed(() => this.currentUser()?.staffId);
 
-  // In-memory Staff store initialized with Rahul, Amit, Priya
-  private readonly staffStore = signal<StaffMember[]>([
-    {
-      id: 'staff-rahul',
-      salon_id: environment.salonId,
-      name: 'Rahul',
-      role: 'Hair Stylist',
-      specialization: 'hair',
-      phone: '+91 98765 43211',
-      is_active: true,
-      base_salary: 25000,
-      incentive_percentage: 15
-    },
-    {
-      id: 'staff-amit',
-      salon_id: environment.salonId,
-      name: 'Amit',
-      role: 'Barber',
-      specialization: 'beard',
-      phone: '+91 98765 43212',
-      is_active: true,
-      base_salary: 22000,
-      incentive_percentage: 12
-    },
-    {
-      id: 'staff-priya',
-      salon_id: environment.salonId,
-      name: 'Priya',
-      role: 'Skin Specialist',
-      specialization: 'skin',
-      phone: '+91 98765 43213',
-      is_active: true,
-      base_salary: 24000,
-      incentive_percentage: 18
-    }
-  ]);
+  // In-memory Staff store (starts empty; populated from Supabase or via UI)
+  private readonly staffStore = signal<StaffMember[]>([]);
 
-  // In-memory Services store initialized with standard catalog
-  private readonly servicesStore = signal<SalonService[]>([
-    {
-      id: 'srv-haircut',
-      salon_id: environment.salonId,
-      category_name: 'Hair',
-      name: 'Haircut',
-      description: 'Signature tailored haircut crafted to facial architecture with neck shave and hot lather rinse.',
-      duration_minutes: 30,
-      price: 200,
-      image_url: 'https://images.unsplash.com/photo-1622286342621-4bd786c2447c?auto=format&fit=crop&w=600&q=80',
-      is_active: true
-    },
-    {
-      id: 'srv-hair-colour',
-      salon_id: environment.salonId,
-      category_name: 'Hair',
-      name: 'Hair Colour',
-      description: 'Custom chromatic formulation with premium ammonia-free tones for seamless dimensional depth.',
-      duration_minutes: 90,
-      price: 800,
-      image_url: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=600&q=80',
-      is_active: true
-    },
-    {
-      id: 'srv-hair-spa',
-      salon_id: environment.salonId,
-      category_name: 'Hair',
-      name: 'Hair Spa',
-      description: 'Deep restorative keratin & botanical scalp ritual with warm steam and pressure-point massage.',
-      duration_minutes: 60,
-      price: 600,
-      image_url: 'https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?auto=format&fit=crop&w=600&q=80',
-      is_active: true
-    },
-    {
-      id: 'srv-beard-trim',
-      salon_id: environment.salonId,
-      category_name: 'Beard',
-      name: 'Beard Trim',
-      description: 'Sculpted line definition, scissor fade, edge detailing, and organic beard oil treatment.',
-      duration_minutes: 15,
-      price: 100,
-      image_url: 'https://images.unsplash.com/photo-1599351431202-1e0f0137899a?auto=format&fit=crop&w=600&q=80',
-      is_active: true
-    },
-    {
-      id: 'srv-shave',
-      salon_id: environment.salonId,
-      category_name: 'Beard',
-      name: 'Shave',
-      description: 'Traditional straight razor shave with essential pre-shave oils, hot towel infusion, and soothing balm.',
-      duration_minutes: 20,
-      price: 100,
-      image_url: 'https://images.unsplash.com/photo-1621605815971-fbc98d665033?auto=format&fit=crop&w=600&q=80',
-      is_active: true
-    },
-    {
-      id: 'srv-facial',
-      salon_id: environment.salonId,
-      category_name: 'Skin',
-      name: 'Facial',
-      description: 'Complete dermal detox with enzymatic exfoliation, lymphatic drainage, and vitamin infusion.',
-      duration_minutes: 60,
-      price: 700,
-      image_url: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=600&q=80',
-      is_active: true
-    },
-    {
-      id: 'srv-cleanup',
-      salon_id: environment.salonId,
-      category_name: 'Skin',
-      name: 'Cleanup',
-      description: 'Fast-action pore clarifying cleanse, gentle scrub exfoliation, and cooling botanical mask.',
-      duration_minutes: 45,
-      price: 400,
-      image_url: 'https://images.unsplash.com/photo-1512290900672-1f41e57c6b96?auto=format&fit=crop&w=600&q=80',
-      is_active: true
-    }
-  ]);
+  // In-memory Categories store (starts empty; populated from Supabase or via UI)
+  private readonly categoriesStore = signal<ServiceCategory[]>([]);
 
-  // In-memory Appointments store
-  private readonly appointmentsStore = signal<AdminAppointment[]>([
-    {
-      id: 'apt-101',
-      referenceNumber: 'TCP-829101',
-      salonId: environment.salonId,
-      date: new Date().toISOString().split('T')[0],
-      startTime: '10:00:00',
-      endTime: '10:30:00',
-      status: 'booked',
-      customer: {
-        name: 'Vikram Sharma',
-        phone: '9826112233'
-      },
-      service: {
-        id: 'srv-haircut',
-        name: 'Haircut',
-        durationMinutes: 30,
-        price: 200,
-        categoryName: 'Hair'
-      },
-      services: [
-        {
-          id: 'srv-haircut',
-          name: 'Haircut',
-          durationMinutes: 30,
-          price: 200,
-          categoryName: 'Hair'
-        }
-      ],
-      totalPrice: 200,
-      bookingSource: 'walk_in',
-      bookedByStaffName: 'Rahul (Staff)',
-      ownerApprovalStatus: 'pending',
-      assignedStaff: [], // Unassigned - needs superadmin assignment
-      createdAt: new Date().toISOString()
-    },
-    {
-      id: 'apt-102',
-      referenceNumber: 'TCP-829102',
-      salonId: environment.salonId,
-      date: new Date().toISOString().split('T')[0],
-      startTime: '11:00:00',
-      endTime: '12:30:00',
-      status: 'booked',
-      customer: {
-        name: 'Rohan Mehra',
-        phone: '9826445566'
-      },
-      service: {
-        id: 'srv-hair-colour',
-        name: 'Hair Colour',
-        durationMinutes: 90,
-        price: 800,
-        categoryName: 'Hair'
-      },
-      services: [
-        {
-          id: 'srv-hair-colour',
-          name: 'Hair Colour',
-          durationMinutes: 90,
-          price: 800,
-          categoryName: 'Hair'
-        }
-      ],
-      totalPrice: 800,
-      bookingSource: 'phone_call',
-      bookedByStaffName: 'Rahul (Staff)',
-      ownerApprovalStatus: 'approved',
-      ownerReviewedAt: new Date().toISOString(),
-      assignedStaff: [this.staffStore()[0]], // Assigned to Rahul
-      createdAt: new Date().toISOString()
-    },
-    {
-      id: 'apt-103',
-      referenceNumber: 'TCP-829103',
-      salonId: environment.salonId,
-      date: new Date().toISOString().split('T')[0],
-      startTime: '12:00:00',
-      endTime: '12:20:00',
-      status: 'booked',
-      customer: {
-        name: 'Deepak Verma',
-        phone: '9826778899'
-      },
-      service: {
-        id: 'srv-shave',
-        name: 'Shave',
-        durationMinutes: 20,
-        price: 100,
-        categoryName: 'Beard'
-      },
-      services: [
-        {
-          id: 'srv-shave',
-          name: 'Shave',
-          durationMinutes: 20,
-          price: 100,
-          categoryName: 'Beard'
-        }
-      ],
-      totalPrice: 100,
-      bookingSource: 'walk_in',
-      bookedByStaffName: 'Amit (Staff)',
-      ownerApprovalStatus: 'pending',
-      assignedStaff: [], // Unassigned - needs superadmin assignment
-      createdAt: new Date().toISOString()
-    },
-    {
-      id: 'apt-104',
-      referenceNumber: 'TCP-829104',
-      salonId: environment.salonId,
-      date: new Date().toISOString().split('T')[0],
-      startTime: '14:00:00',
-      endTime: '15:00:00',
-      status: 'completed',
-      customer: {
-        name: 'Ananya Gupta',
-        phone: '9826990011'
-      },
-      service: {
-        id: 'srv-facial',
-        name: 'Facial',
-        durationMinutes: 60,
-        price: 700,
-        categoryName: 'Skin'
-      },
-      services: [
-        {
-          id: 'srv-facial',
-          name: 'Facial',
-          durationMinutes: 60,
-          price: 700,
-          categoryName: 'Skin'
-        }
-      ],
-      totalPrice: 700,
-      bookingSource: 'online',
-      ownerApprovalStatus: 'approved',
-      statusChangedBy: 'Priya (Staff)',
-      ownerReviewedAt: new Date().toISOString(),
-      assignedStaff: [this.staffStore()[2]], // Assigned to Priya
-      createdAt: new Date().toISOString()
-    },
-    {
-      id: 'apt-105',
-      referenceNumber: 'TCP-829105',
-      salonId: environment.salonId,
-      date: new Date().toISOString().split('T')[0],
-      startTime: '09:30:00',
-      endTime: '10:00:00',
-      status: 'completed',
-      customer: {
-        name: 'Kunal Shah',
-        phone: '9826115544'
-      },
-      service: {
-        id: 'srv-haircut',
-        name: 'Haircut',
-        durationMinutes: 30,
-        price: 200,
-        categoryName: 'Hair'
-      },
-      services: [
-        {
-          id: 'srv-haircut',
-          name: 'Haircut',
-          durationMinutes: 30,
-          price: 200,
-          categoryName: 'Hair'
-        }
-      ],
-      totalPrice: 200,
-      bookingSource: 'walk_in',
-      bookedByStaffName: 'Rahul (Staff)',
-      ownerApprovalStatus: 'approved',
-      statusChangedBy: 'Rahul (Staff)',
-      ownerReviewedAt: new Date().toISOString(),
-      assignedStaff: [this.staffStore()[0]], // Assigned to Rahul
-      createdAt: new Date().toISOString()
-    },
-    {
-      id: 'apt-106',
-      referenceNumber: 'TCP-829106',
-      salonId: environment.salonId,
-      date: new Date().toISOString().split('T')[0],
-      startTime: '12:30:00',
-      endTime: '13:00:00',
-      status: 'booked',
-      customer: {
-        name: 'Harsh Vardhan',
-        phone: '9826227788'
-      },
-      service: {
-        id: 'srv-beard-trim',
-        name: 'Beard Trim',
-        durationMinutes: 15,
-        price: 100,
-        categoryName: 'Beard'
-      },
-      services: [
-        {
-          id: 'srv-beard-trim',
-          name: 'Beard Trim',
-          durationMinutes: 15,
-          price: 100,
-          categoryName: 'Beard'
-        }
-      ],
-      totalPrice: 100,
-      bookingSource: 'phone_call',
-      bookedByStaffName: 'Amit (Staff)',
-      ownerApprovalStatus: 'pending',
-      assignedStaff: [this.staffStore()[1]], // Assigned to Amit
-      createdAt: new Date().toISOString()
-    },
-    {
-      id: 'apt-107',
-      referenceNumber: 'TCP-829107',
-      salonId: environment.salonId,
-      date: new Date().toISOString().split('T')[0],
-      startTime: '15:30:00',
-      endTime: '16:15:00',
-      status: 'booked',
-      customer: {
-        name: 'Sneha Patel',
-        phone: '9826338811'
-      },
-      service: {
-        id: 'srv-cleanup',
-        name: 'Cleanup',
-        durationMinutes: 45,
-        price: 400,
-        categoryName: 'Skin'
-      },
-      services: [
-        {
-          id: 'srv-cleanup',
-          name: 'Cleanup',
-          durationMinutes: 45,
-          price: 400,
-          categoryName: 'Skin'
-        }
-      ],
-      totalPrice: 400,
-      bookingSource: 'online',
-      ownerApprovalStatus: 'approved',
-      ownerReviewedAt: new Date().toISOString(),
-      assignedStaff: [this.staffStore()[2]], // Assigned to Priya
-      createdAt: new Date().toISOString()
-    },
-    {
-      id: 'apt-108',
-      referenceNumber: 'TCP-829108',
-      salonId: environment.salonId,
-      date: new Date().toISOString().split('T')[0],
-      startTime: '10:30:00',
-      endTime: '10:50:00',
-      status: 'completed',
-      customer: {
-        name: 'Sameer Khan',
-        phone: '9826449922'
-      },
-      service: {
-        id: 'srv-shave',
-        name: 'Shave',
-        durationMinutes: 20,
-        price: 100,
-        categoryName: 'Beard'
-      },
-      services: [
-        {
-          id: 'srv-shave',
-          name: 'Shave',
-          durationMinutes: 20,
-          price: 100,
-          categoryName: 'Beard'
-        }
-      ],
-      totalPrice: 100,
-      bookingSource: 'walk_in',
-      bookedByStaffName: 'Amit (Staff)',
-      ownerApprovalStatus: 'approved',
-      statusChangedBy: 'Amit (Staff)',
-      ownerReviewedAt: new Date().toISOString(),
-      assignedStaff: [this.staffStore()[1]], // Assigned to Amit
-      createdAt: new Date().toISOString()
-    },
-    {
-      id: 'apt-109',
-      referenceNumber: 'TCP-829109',
-      salonId: environment.salonId,
-      date: new Date().toISOString().split('T')[0],
-      startTime: '17:00:00',
-      endTime: '17:45:00',
-      status: 'booked',
-      customer: {
-        name: 'Aditya Singhania',
-        phone: '9826771122'
-      },
-      service: {
-        id: 'srv-haircut',
-        name: 'Haircut + Beard Trim',
-        durationMinutes: 45,
-        price: 300,
-        categoryName: 'Hair & Beard'
-      },
-      services: [
-        {
-          id: 'srv-haircut',
-          name: 'Haircut',
-          durationMinutes: 30,
-          price: 200,
-          categoryName: 'Hair'
-        },
-        {
-          id: 'srv-beard-trim',
-          name: 'Beard Trim',
-          durationMinutes: 15,
-          price: 100,
-          categoryName: 'Beard'
-        }
-      ],
-      totalPrice: 300,
-      bookingSource: 'walk_in',
-      bookedByStaffName: 'Rahul (Staff)',
-      ownerApprovalStatus: 'pending',
-      assignedStaff: [this.staffStore()[0], this.staffStore()[1]], // Multi-stylist: Rahul & Amit
-      notes: 'Multi-service: Haircut by Rahul, Beard Trim by Amit',
-      createdAt: new Date().toISOString()
+  // In-memory Services store (starts empty; populated from Supabase or via UI)
+  private readonly servicesStore = signal<SalonService[]>([]);
+
+  // In-memory Appointments store (starts empty; populated from Supabase or via UI)
+  private readonly appointmentsStore = signal<AdminAppointment[]>([]);
+
+  // Helper for unit tests to populate test fixtures in memory
+  seedTestDataForTesting(
+    staff: StaffMember[],
+    services: SalonService[],
+    appointments: AdminAppointment[],
+    categories?: ServiceCategory[]
+  ): void {
+    this.staffStore.set(staff);
+    this.servicesStore.set(services);
+    this.appointmentsStore.set(appointments);
+    if (categories) {
+      this.categoriesStore.set(categories);
     }
-  ]);
+  }
 
   // In-memory Salon Hours store
   private readonly openingHoursStore = signal<SalonOpeningHour[]>([
@@ -539,11 +117,7 @@ export class AdminService {
           password
         });
 
-        if (error) {
-          return { success: false, error: error.message };
-        }
-
-        if (data.user) {
+        if (!error && data?.user) {
           const role = forceRole || (data.user.user_metadata?.['role'] as 'superadmin' | 'staff') || 'superadmin';
           const user: AdminUser = {
             id: data.user.id,
@@ -557,7 +131,7 @@ export class AdminService {
           return { success: true };
         }
       } catch (err: any) {
-        return { success: false, error: err.message || 'Authentication failed' };
+        // Fall back to demo authentication
       }
     }
 
@@ -583,7 +157,7 @@ export class AdminService {
         email: email,
         role: role,
         name: name,
-        staffId: role === 'staff' ? (assignedStaff?.id || 'staff-rahul') : undefined
+        staffId: role === 'staff' ? (assignedStaff?.id || staffId || 'staff-default') : undefined
       };
       this.currentUser.set(demoUser);
       localStorage.setItem('croppers_admin_user', JSON.stringify(demoUser));
@@ -743,6 +317,139 @@ export class AdminService {
     return true;
   }
 
+  // --- CATEGORIES CRUD (SUPERADMIN ONLY) ---
+
+  async getCategories(): Promise<ServiceCategory[]> {
+    if (this.supabase.isReady && this.supabase.clientInstance) {
+      try {
+        const { data, error } = await this.supabase.clientInstance
+          .from('service_categories')
+          .select('*')
+          .eq('salon_id', this.salonId)
+          .order('display_order', { ascending: true });
+
+        if (!error && data && data.length > 0) {
+          const mapped: ServiceCategory[] = data.map((c: any) => ({
+            id: c.id,
+            salon_id: c.salon_id,
+            name: c.name,
+            description: c.description,
+            display_order: c.display_order ?? 0
+          }));
+          this.categoriesStore.set(mapped);
+          return mapped;
+        }
+      } catch (err) {
+        console.warn('[AdminService] Supabase getCategories fallback:', err);
+      }
+    }
+    return this.categoriesStore();
+  }
+
+  async addCategory(payload: CreateCategoryPayload): Promise<ServiceCategory> {
+    if (!this.isSuperadmin()) {
+      throw new Error('Unauthorized: Only Superadmin can add categories.');
+    }
+
+    const newCategory: ServiceCategory = {
+      id: 'cat-' + Math.random().toString(36).substring(2, 9),
+      salon_id: this.salonId,
+      name: payload.name.trim(),
+      description: payload.description?.trim() || null,
+      display_order: payload.display_order !== undefined ? Number(payload.display_order) : (this.categoriesStore().length + 1)
+    };
+
+    if (this.supabase.isReady && this.supabase.clientInstance) {
+      try {
+        const { data, error } = await this.supabase.clientInstance
+          .from('service_categories')
+          .insert({
+            salon_id: this.salonId,
+            name: newCategory.name,
+            description: newCategory.description,
+            display_order: newCategory.display_order
+          })
+          .select()
+          .single();
+
+        if (!error && data) {
+          newCategory.id = data.id;
+        }
+      } catch (err) {
+        console.warn('[AdminService] Supabase addCategory error:', err);
+      }
+    }
+
+    this.categoriesStore.update(list => [...list, newCategory]);
+    return newCategory;
+  }
+
+  async updateCategory(id: string, payload: UpdateCategoryPayload): Promise<ServiceCategory | null> {
+    if (!this.isSuperadmin()) {
+      throw new Error('Unauthorized: Only Superadmin can edit categories.');
+    }
+
+    let updated: ServiceCategory | null = null;
+
+    if (this.supabase.isReady && this.supabase.clientInstance) {
+      try {
+        await this.supabase.clientInstance
+          .from('service_categories')
+          .update({
+            ...(payload.name ? { name: payload.name.trim() } : {}),
+            ...(payload.description !== undefined ? { description: payload.description?.trim() || null } : {}),
+            ...(payload.display_order !== undefined ? { display_order: Number(payload.display_order) } : {})
+          })
+          .eq('id', id);
+      } catch (err) {
+        console.warn('[AdminService] Supabase updateCategory error:', err);
+      }
+    }
+
+    this.categoriesStore.update(list =>
+      list.map(c => {
+        if (c.id === id) {
+          updated = {
+            ...c,
+            ...(payload.name ? { name: payload.name.trim() } : {}),
+            ...(payload.description !== undefined ? { description: payload.description?.trim() || null } : {}),
+            ...(payload.display_order !== undefined ? { display_order: Number(payload.display_order) } : {})
+          };
+          return updated;
+        }
+        return c;
+      })
+    );
+
+    return updated;
+  }
+
+  async deleteCategory(id: string): Promise<boolean> {
+    if (!this.isSuperadmin()) {
+      throw new Error('Unauthorized: Only Superadmin can delete categories.');
+    }
+
+    if (this.supabase.isReady && this.supabase.clientInstance) {
+      try {
+        // First, unlink or reassign services attached to this category
+        await this.supabase.clientInstance
+          .from('services')
+          .update({ category_id: null })
+          .eq('category_id', id);
+
+        await this.supabase.clientInstance
+          .from('service_categories')
+          .delete()
+          .eq('id', id);
+      } catch (err) {
+        console.warn('[AdminService] Supabase deleteCategory error:', err);
+      }
+    }
+
+    this.categoriesStore.update(list => list.filter(c => c.id !== id));
+    return true;
+  }
+
   // --- SERVICES CRUD (SUPERADMIN ONLY) ---
 
   async getServices(): Promise<SalonService[]> {
@@ -763,7 +470,8 @@ export class AdminService {
             description: item.description,
             duration_minutes: item.duration_minutes,
             price: Number(item.price),
-            is_active: item.is_active
+            image_url: item.image_url,
+            is_active: item.is_active ?? true
           }));
           this.servicesStore.set(mapped);
           return mapped;
@@ -776,10 +484,15 @@ export class AdminService {
   }
 
   async addService(payload: CreateServicePayload): Promise<SalonService> {
+    const categories = this.categoriesStore();
+    const matchedCategory = categories.find(c => c.name.toLowerCase() === (payload.category_name || '').toLowerCase());
+    const category_id = matchedCategory?.id || null;
+
     const newService: SalonService = {
       id: 'srv-' + Math.random().toString(36).substring(2, 9),
       salon_id: this.salonId,
-      category_name: payload.category_name,
+      category_id: category_id,
+      category_name: payload.category_name || matchedCategory?.name || 'General',
       name: payload.name.trim(),
       description: payload.description?.trim() || null,
       duration_minutes: payload.duration_minutes,
@@ -793,6 +506,7 @@ export class AdminService {
           .from('services')
           .insert({
             salon_id: this.salonId,
+            category_id: category_id,
             name: newService.name,
             description: newService.description,
             duration_minutes: newService.duration_minutes,
@@ -816,6 +530,15 @@ export class AdminService {
 
   async updateService(id: string, payload: UpdateServicePayload): Promise<SalonService | null> {
     let updated: SalonService | null = null;
+    let category_id: string | null | undefined = payload.category_id;
+
+    if (!category_id && payload.category_name) {
+      const categories = this.categoriesStore();
+      const matched = categories.find(c => c.name.toLowerCase() === payload.category_name?.toLowerCase());
+      if (matched) {
+        category_id = matched.id;
+      }
+    }
 
     if (this.supabase.isReady && this.supabase.clientInstance) {
       try {
@@ -823,9 +546,11 @@ export class AdminService {
           .from('services')
           .update({
             ...(payload.name ? { name: payload.name.trim() } : {}),
+            ...(category_id !== undefined ? { category_id } : {}),
             ...(payload.description !== undefined ? { description: payload.description } : {}),
             ...(payload.duration_minutes ? { duration_minutes: payload.duration_minutes } : {}),
             ...(payload.price !== undefined ? { price: payload.price } : {}),
+            ...(payload.image_url !== undefined ? { image_url: payload.image_url } : {}),
             ...(payload.is_active !== undefined ? { is_active: payload.is_active } : {})
           })
           .eq('id', id);
@@ -840,10 +565,12 @@ export class AdminService {
           updated = {
             ...s,
             ...(payload.name ? { name: payload.name.trim() } : {}),
+            ...(category_id !== undefined ? { category_id } : {}),
             ...(payload.category_name ? { category_name: payload.category_name } : {}),
             ...(payload.description !== undefined ? { description: payload.description } : {}),
             ...(payload.duration_minutes ? { duration_minutes: payload.duration_minutes } : {}),
             ...(payload.price !== undefined ? { price: payload.price } : {}),
+            ...(payload.image_url !== undefined ? { image_url: payload.image_url } : {}),
             ...(payload.is_active !== undefined ? { is_active: payload.is_active } : {})
           };
           return updated;
@@ -874,6 +601,111 @@ export class AdminService {
   // --- APPOINTMENTS CRUD & STATUSES ---
 
   async getAppointments(filter?: AppointmentFilter): Promise<AdminAppointment[]> {
+    if (this.supabase.isReady && this.supabase.clientInstance) {
+      try {
+        let query = this.supabase.clientInstance
+          .from('appointments')
+          .select(`
+            *,
+            customers (name, phone),
+            appointment_services (
+              price,
+              services (id, name, duration_minutes, price, service_categories(name)),
+              appointment_service_staff (staff (*))
+            )
+          `)
+          .eq('salon_id', this.salonId)
+          .order('date', { ascending: false });
+
+        if (filter?.date) {
+          query = query.eq('date', filter.date);
+        }
+        if (filter?.status && filter.status !== 'all') {
+          query = query.eq('status', filter.status);
+        }
+
+        const { data, error } = await query;
+
+        if (!error && data && data.length > 0) {
+          const mapped: AdminAppointment[] = data.map((apt: any) => {
+            const aptServices = apt.appointment_services || [];
+            const serviceItems: AppointmentServiceItem[] = aptServices.map((as: any) => ({
+              id: as.services?.id || 'srv-unknown',
+              name: as.services?.name || 'Service',
+              durationMinutes: as.services?.duration_minutes || 30,
+              price: Number(as.price || as.services?.price || 0),
+              categoryName: as.services?.service_categories?.name || 'General'
+            }));
+
+            const assignedStaff: StaffMember[] = [];
+            aptServices.forEach((as: any) => {
+              (as.appointment_service_staff || []).forEach((ass: any) => {
+                if (ass.staff && !assignedStaff.some(s => s.id === ass.staff.id)) {
+                  assignedStaff.push({
+                    id: ass.staff.id,
+                    salon_id: ass.staff.salon_id,
+                    name: ass.staff.name || ass.staff.full_name || 'Staff',
+                    role: ass.staff.role || ass.staff.designation || 'Stylist',
+                    specialization: ass.staff.specialization || 'all',
+                    phone: ass.staff.phone || '',
+                    is_active: ass.staff.is_active ?? true,
+                    base_salary: Number(ass.staff.base_salary || 22000),
+                    incentive_percentage: Number(ass.staff.incentive_percentage || 15)
+                  });
+                }
+              });
+            });
+
+            const primaryService = serviceItems[0] || {
+              id: 'srv-haircut',
+              name: 'Haircut',
+              durationMinutes: 30,
+              price: Number(apt.total_price || 0),
+              categoryName: 'General'
+            };
+
+            const totalDuration = serviceItems.reduce((acc, s) => acc + s.durationMinutes, 0);
+
+            return {
+              id: apt.id,
+              referenceNumber: apt.reference_number || 'TCP-000000',
+              salonId: apt.salon_id,
+              date: apt.date || apt.appointment_date,
+              startTime: apt.start_time || '10:00:00',
+              endTime: apt.end_time || '10:30:00',
+              status: apt.status || 'booked',
+              customer: {
+                name: apt.customers?.name || apt.customers?.full_name || 'Walk-in Client',
+                phone: apt.customers?.phone || ''
+              },
+              service: {
+                id: primaryService.id,
+                name: serviceItems.length > 1 ? serviceItems.map(s => s.name).join(' + ') : primaryService.name,
+                durationMinutes: totalDuration,
+                price: Number(apt.total_price || primaryService.price),
+                categoryName: primaryService.categoryName
+              },
+              services: serviceItems,
+              totalPrice: Number(apt.total_price || 0),
+              paymentMethod: apt.payment_method || 'cash',
+              bookingSource: apt.booking_source || 'walk_in',
+              bookedByStaffName: apt.booked_by_staff_name,
+              ownerApprovalStatus: apt.owner_approval_status || 'approved',
+              customPriceNote: apt.custom_price_note,
+              statusChangedBy: apt.status_changed_by,
+              assignedStaff,
+              notes: apt.notes,
+              createdAt: apt.created_at
+            };
+          });
+
+          this.appointmentsStore.set(mapped);
+        }
+      } catch (err) {
+        console.warn('[AdminService] Supabase getAppointments fallback:', err);
+      }
+    }
+
     let list = this.appointmentsStore();
 
     // STRICT ROLE-BASED ACCESS CONTROL:
@@ -903,6 +735,23 @@ export class AdminService {
     }
     if (filter?.status && filter.status !== 'all') {
       list = list.filter(a => a.status === filter.status);
+    }
+    if (filter?.exceptionsOnly) {
+      list = list.filter(a => 
+        a.ownerApprovalStatus === 'pending' || 
+        a.bookingSource === 'walk_in' || 
+        a.bookingSource === 'phone_call' || 
+        !!a.customPriceNote || 
+        (a.status !== 'booked')
+      );
+    }
+    if (filter?.searchTerm && filter.searchTerm.trim()) {
+      const term = filter.searchTerm.trim().toLowerCase();
+      list = list.filter(a => 
+        a.customer.name.toLowerCase().includes(term) ||
+        a.customer.phone.includes(term) ||
+        a.referenceNumber.toLowerCase().includes(term)
+      );
     }
 
     return list;
@@ -996,6 +845,7 @@ export class AdminService {
       },
       services: serviceItems,
       totalPrice: totalPrice,
+      paymentMethod: payload.paymentMethod || (payload.bookingSource === 'walk_in' ? 'cash' : 'upi'),
       bookingSource: payload.bookingSource || 'walk_in',
       bookedByStaffId,
       bookedByStaffName,
@@ -1255,6 +1105,7 @@ export class AdminService {
             services: [...services],
             totalPrice: payload.finalPrice,
             customPriceNote: payload.priceAdjustmentNote?.trim() || undefined,
+            paymentMethod: payload.paymentMethod || apt.paymentMethod || 'cash',
             assignedStaff: [...payload.assignedStaff],
             notes: payload.notes !== undefined ? payload.notes : apt.notes,
             ownerApprovalStatus: payload.approveNow ? 'approved' : (apt.ownerApprovalStatus || 'approved'),
@@ -1269,13 +1120,192 @@ export class AdminService {
     return updated;
   }
 
-  // --- SALON SETTINGS & HOURS (SUPERADMIN ONLY) ---
+  // 1-Tap Quick Add-on Service on Appointment Card
+  async addQuickAddonService(appointmentId: string, serviceId: string): Promise<AdminAppointment | null> {
+    const srv = this.servicesStore().find(s => s.id === serviceId);
+    if (!srv) {
+      throw new Error('Service not found.');
+    }
+
+    let updated: AdminAppointment | null = null;
+    this.appointmentsStore.update(items =>
+      items.map(apt => {
+        if (apt.id === appointmentId) {
+          const currentServices: AppointmentServiceItem[] = apt.services && apt.services.length > 0
+            ? [...apt.services]
+            : [{
+                id: apt.service.id,
+                name: apt.service.name,
+                durationMinutes: apt.service.durationMinutes,
+                price: apt.service.price,
+                categoryName: apt.service.categoryName
+              }];
+
+          const newItem: AppointmentServiceItem = {
+            id: srv.id,
+            name: srv.name,
+            durationMinutes: srv.duration_minutes,
+            price: srv.price,
+            categoryName: srv.category_name
+          };
+
+          const newServices = [...currentServices, newItem];
+          const totalDuration = newServices.reduce((acc, s) => acc + s.durationMinutes, 0);
+          const combinedName = newServices.map(s => s.name).join(' + ');
+          const currentPrice = apt.totalPrice !== undefined ? apt.totalPrice : apt.service.price;
+          const newTotalPrice = currentPrice + srv.price;
+
+          // Recalculate end time
+          const startParts = apt.startTime.split(':');
+          const startHour = parseInt(startParts[0], 10);
+          const startMin = parseInt(startParts[1] || '0', 10);
+          const totalMinutes = startHour * 60 + startMin + totalDuration;
+          const endHour = Math.floor(totalMinutes / 60);
+          const endMin = totalMinutes % 60;
+          const endTime = `${String(endHour).padStart(2, '0')}:${String(endMin).padStart(2, '0')}:00`;
+
+          updated = {
+            ...apt,
+            endTime,
+            service: {
+              ...apt.service,
+              name: combinedName,
+              durationMinutes: totalDuration,
+              price: newTotalPrice
+            },
+            services: newServices,
+            totalPrice: newTotalPrice,
+            ownerApprovalStatus: 'pending' // Adding service mid-day flags for owner EOD review
+          };
+          return updated;
+        }
+        return apt;
+      })
+    );
+    return updated;
+  }
+
+  // --- SALON SETTINGS, PROFILE & HOURS (SUPERADMIN ONLY) ---
+
+  async getSalonProfile(): Promise<Salon> {
+    if (this.supabase.isReady && this.supabase.clientInstance) {
+      try {
+        const { data, error } = await this.supabase.clientInstance
+          .from('salons')
+          .select('*')
+          .eq('id', this.salonId)
+          .single();
+
+        if (!error && data) {
+          return {
+            id: data.id,
+            name: data.name || environment.salonName,
+            slug: data.slug || 'the-croppers',
+            city: data.city || environment.salonCity,
+            phone: data.phone || environment.salonPhone,
+            timezone: data.timezone || environment.timezone,
+            currency: data.currency || environment.currency
+          };
+        }
+      } catch (err) {
+        console.warn('[AdminService] Supabase getSalonProfile fallback:', err);
+      }
+    }
+    return {
+      id: this.salonId,
+      name: environment.salonName,
+      slug: 'the-croppers',
+      city: environment.salonCity,
+      phone: environment.salonPhone,
+      timezone: environment.timezone,
+      currency: environment.currency
+    };
+  }
+
+  async updateSalonProfile(profile: Partial<Salon>): Promise<boolean> {
+    if (!this.isSuperadmin()) {
+      throw new Error('Unauthorized: Only Superadmin can update salon profile.');
+    }
+
+    if (this.supabase.isReady && this.supabase.clientInstance) {
+      try {
+        await this.supabase.clientInstance
+          .from('salons')
+          .update({
+            ...(profile.name ? { name: profile.name } : {}),
+            ...(profile.city ? { city: profile.city } : {}),
+            ...(profile.phone ? { phone: profile.phone } : {}),
+            ...(profile.timezone ? { timezone: profile.timezone } : {}),
+            ...(profile.currency ? { currency: profile.currency } : {})
+          })
+          .eq('id', this.salonId);
+      } catch (err) {
+        console.warn('[AdminService] Supabase updateSalonProfile error:', err);
+      }
+    }
+
+    return true;
+  }
 
   async getOpeningHours(): Promise<SalonOpeningHour[]> {
+    if (this.supabase.isReady && this.supabase.clientInstance) {
+      try {
+        const { data, error } = await this.supabase.clientInstance
+          .from('salon_hours')
+          .select('*')
+          .eq('salon_id', this.salonId)
+          .order('day_of_week', { ascending: true });
+
+        if (!error && data && data.length > 0) {
+          const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+          const mapped: SalonOpeningHour[] = data.map((h: any) => {
+            const dayStr = typeof h.day_of_week === 'number' ? (dayNames[h.day_of_week] || 'Monday') : (h.day_of_week || 'Monday');
+            return {
+              dayOfWeek: dayStr,
+              openTime: (h.open_time || h.opens_at || '10:00:00').substring(0, 5),
+              closeTime: (h.close_time || h.closes_at || '20:00:00').substring(0, 5),
+              isClosed: h.is_closed ?? false
+            };
+          });
+          this.openingHoursStore.set(mapped);
+          return mapped;
+        }
+      } catch (err) {
+        console.warn('[AdminService] Supabase getOpeningHours fallback:', err);
+      }
+    }
     return this.openingHoursStore();
   }
 
   async updateOpeningHours(hours: SalonOpeningHour[]): Promise<boolean> {
+    if (!this.isSuperadmin()) {
+      throw new Error('Unauthorized: Only Superadmin can update salon hours.');
+    }
+
+    if (this.supabase.isReady && this.supabase.clientInstance) {
+      const dayMap: Record<string, number> = {
+        'sunday': 0, 'monday': 1, 'tuesday': 2, 'wednesday': 3,
+        'thursday': 4, 'friday': 5, 'saturday': 6
+      };
+
+      for (const h of hours) {
+        const dayInt = dayMap[h.dayOfWeek.toLowerCase()] ?? 1;
+        try {
+          await this.supabase.clientInstance
+            .from('salon_hours')
+            .upsert({
+              salon_id: this.salonId,
+              day_of_week: dayInt,
+              open_time: `${h.openTime}:00`,
+              close_time: `${h.closeTime}:00`,
+              is_closed: h.isClosed
+            }, { onConflict: 'salon_id,day_of_week' });
+        } catch (err) {
+          console.warn('[AdminService] Supabase updateOpeningHours day error:', err);
+        }
+      }
+    }
+
     this.openingHoursStore.set([...hours]);
     return true;
   }

@@ -165,6 +165,70 @@ import { StaffPayrollRecord } from '../../../core/models/export.model';
             <span class="metric-hint">Today's assigned service total</span>
           </div>
         </div>
+
+        <!-- STYLIST NOW SERVING & NEXT UP FOCUS WIDGET (Feature 5.1 & 5.2) -->
+        <div class="croppers-card station-focus-widget">
+          <div class="focus-header">
+            <div class="focus-title-wrap">
+              <span class="live-dot-pulse"></span>
+              <span class="focus-title">Active Station Queue</span>
+            </div>
+            <div class="daily-ticker-chip">
+              <span class="ticker-icon">⚡</span>
+              <span>Today: <strong>{{ staffCompletedTotal() }} Done</strong> • <strong class="text-gold">+₹{{ todayIncentiveEarned() | number }} Commission Earned</strong></span>
+            </div>
+          </div>
+
+          <div class="focus-cards-row">
+            <!-- Now Serving in Chair -->
+            <div class="focus-slot-box now-serving-box">
+              <div class="slot-badge-label">NOW SERVING (IN CHAIR)</div>
+              @if (nowServingClient(); as currentApt) {
+                <div class="slot-body">
+                  <div class="slot-client-info">
+                    <h2 class="slot-client-name"><strong>{{ currentApt.customer.name }}</strong></h2>
+                    <span class="slot-service-name">{{ currentApt.service.name }}</span>
+                    <div class="slot-meta-row">
+                      <span class="slot-time">⏰ {{ formatTime12(currentApt.startTime) }} ({{ currentApt.service.durationMinutes }}m)</span>
+                      <span>•</span>
+                      <a [href]="'tel:' + currentApt.customer.phone" class="slot-phone">📞 {{ currentApt.customer.phone }}</a>
+                    </div>
+                  </div>
+                  <button 
+                    type="button" 
+                    class="btn btn-primary complete-chair-btn"
+                    (click)="onCompleteAppointment(currentApt.id, currentApt.customer.name)">
+                    ✓ Complete Service
+                  </button>
+                </div>
+              } @else {
+                <div class="slot-empty">
+                  <span class="empty-chair-icon">🪑</span>
+                  <span>Chair is clear — all clients for today are completed!</span>
+                </div>
+              }
+            </div>
+
+            <!-- Up Next -->
+            <div class="focus-slot-box up-next-box">
+              <div class="slot-badge-label">UP NEXT</div>
+              @if (upNextClient(); as nextApt) {
+                <div class="slot-body">
+                  <div class="slot-client-info">
+                    <h3 class="slot-client-name"><strong>{{ nextApt.customer.name }}</strong></h3>
+                    <span class="slot-service-name">{{ nextApt.service.name }}</span>
+                    <span class="slot-time">Scheduled at <strong>{{ formatTime12(nextApt.startTime) }}</strong> ({{ nextApt.service.durationMinutes }}m)</span>
+                  </div>
+                  <span class="up-next-tag">Next in line</span>
+                </div>
+              } @else {
+                <div class="slot-empty">
+                  <span>No upcoming clients waiting.</span>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
       }
 
       <!-- Split Grid Section -->
@@ -376,6 +440,25 @@ export class AdminDashboardComponent implements OnInit {
     const booked = this.todayAppointments().filter(a => a.status === 'booked');
     if (booked.length === 0) return null;
     return booked.sort((a, b) => a.startTime.localeCompare(b.startTime))[0];
+  });
+
+  readonly nowServingClient = computed(() => {
+    return this.nextClientAppointment();
+  });
+
+  readonly upNextClient = computed(() => {
+    const booked = this.todayAppointments().filter(a => a.status === 'booked');
+    if (booked.length <= 1) return null;
+    const sorted = booked.sort((a, b) => a.startTime.localeCompare(b.startTime));
+    return sorted[1];
+  });
+
+  readonly todayIncentiveEarned = computed(() => {
+    const rate = this.staffIncentiveRate();
+    const completedRevenue = this.todayAppointments()
+      .filter(a => a.status === 'completed')
+      .reduce((sum, a) => sum + (a.totalPrice || a.service.price || 0), 0);
+    return Math.round((completedRevenue * rate) / 100);
   });
 
   readonly nextClientTime = computed(() => {

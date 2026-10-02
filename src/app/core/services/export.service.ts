@@ -75,63 +75,8 @@ export class ExportService {
       }
     }
 
-    // Default seeded salon customers
-    return [
-      {
-        id: 'cust-1',
-        name: 'Vikram Sharma',
-        phone: '+91 9826112233',
-        totalVisits: 4,
-        totalSpend: 1400,
-        firstVisit: '2026-06-12',
-        lastVisit: '2026-09-27'
-      },
-      {
-        id: 'cust-2',
-        name: 'Rohan Mehra',
-        phone: '+91 9826445566',
-        totalVisits: 3,
-        totalSpend: 2400,
-        firstVisit: '2026-07-04',
-        lastVisit: '2026-09-27'
-      },
-      {
-        id: 'cust-3',
-        name: 'Deepak Verma',
-        phone: '+91 9826778899',
-        totalVisits: 6,
-        totalSpend: 1200,
-        firstVisit: '2026-05-18',
-        lastVisit: '2026-09-27'
-      },
-      {
-        id: 'cust-4',
-        name: 'Ananya Gupta',
-        phone: '+91 9826990011',
-        totalVisits: 2,
-        totalSpend: 1400,
-        firstVisit: '2026-08-20',
-        lastVisit: '2026-09-27'
-      },
-      {
-        id: 'cust-5',
-        name: 'Suresh Nambiar',
-        phone: '+91 9826334455',
-        totalVisits: 5,
-        totalSpend: 1900,
-        firstVisit: '2026-04-10',
-        lastVisit: '2026-09-25'
-      },
-      {
-        id: 'cust-6',
-        name: 'Amitabh Tiwari',
-        phone: '+91 9826887766',
-        totalVisits: 1,
-        totalSpend: 600,
-        firstVisit: '2026-09-22',
-        lastVisit: '2026-09-22'
-      }
-    ];
+    // Default empty when offline or no records
+    return [];
   }
 
   async getServicesHistory(range?: ExportDateRange): Promise<ServiceHistoryRecord[]> {
@@ -200,121 +145,8 @@ export class ExportService {
       }
     }
 
-    // Default seeded staff attendance records
-    const today = new Date().toISOString().split('T')[0];
-    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-    const twoDaysAgo = new Date(Date.now() - 172800000).toISOString().split('T')[0];
-
-    return [
-      {
-        id: 'att-101',
-        staffId: 'staff-rahul',
-        staffName: 'Rahul',
-        role: 'Hair Stylist',
-        date: today,
-        checkIn: '09:50 AM',
-        checkOut: '08:05 PM',
-        hoursWorked: 10.25,
-        status: 'Present',
-        notes: 'Full shift completed'
-      },
-      {
-        id: 'att-102',
-        staffId: 'staff-amit',
-        staffName: 'Amit',
-        role: 'Barber',
-        date: today,
-        checkIn: '09:55 AM',
-        checkOut: '08:00 PM',
-        hoursWorked: 10.0,
-        status: 'Present',
-        notes: 'Punctual'
-      },
-      {
-        id: 'att-103',
-        staffId: 'staff-priya',
-        staffName: 'Priya',
-        role: 'Skin Specialist',
-        date: today,
-        checkIn: '10:05 AM',
-        checkOut: '08:15 PM',
-        hoursWorked: 10.15,
-        status: 'Present',
-        notes: 'Completed all facial consultations'
-      },
-      {
-        id: 'att-104',
-        staffId: 'staff-rahul',
-        staffName: 'Rahul',
-        role: 'Hair Stylist',
-        date: yesterday,
-        checkIn: '09:52 AM',
-        checkOut: '08:00 PM',
-        hoursWorked: 10.1,
-        status: 'Present',
-        notes: 'Full shift'
-      },
-      {
-        id: 'att-105',
-        staffId: 'staff-amit',
-        staffName: 'Amit',
-        role: 'Barber',
-        date: yesterday,
-        checkIn: '10:00 AM',
-        checkOut: '03:00 PM',
-        hoursWorked: 5.0,
-        status: 'Half-day',
-        notes: 'Approved half day'
-      },
-      {
-        id: 'att-106',
-        staffId: 'staff-priya',
-        staffName: 'Priya',
-        role: 'Skin Specialist',
-        date: yesterday,
-        checkIn: '09:58 AM',
-        checkOut: '08:02 PM',
-        hoursWorked: 10.05,
-        status: 'Present',
-        notes: 'Punctual'
-      },
-      {
-        id: 'att-107',
-        staffId: 'staff-rahul',
-        staffName: 'Rahul',
-        role: 'Hair Stylist',
-        date: twoDaysAgo,
-        checkIn: '09:48 AM',
-        checkOut: '08:10 PM',
-        hoursWorked: 10.35,
-        status: 'Present',
-        notes: 'Full shift'
-      },
-      {
-        id: 'att-108',
-        staffId: 'staff-amit',
-        staffName: 'Amit',
-        role: 'Barber',
-        date: twoDaysAgo,
-        checkIn: '09:55 AM',
-        checkOut: '08:00 PM',
-        hoursWorked: 10.0,
-        status: 'Present',
-        notes: 'Full shift'
-      },
-      {
-        id: 'att-109',
-        staffId: 'staff-priya',
-        staffName: 'Priya',
-        role: 'Skin Specialist',
-        date: twoDaysAgo,
-        checkIn: '-',
-        checkOut: '-',
-        hoursWorked: 0.0,
-        status: 'Leave',
-        notes: 'Scheduled weekly off'
-      }
-    ];
+    // Default empty when offline or no records
+    return [];
   }
 
   async getStaffIncentives(range?: ExportDateRange): Promise<StaffIncentiveRecord[]> {
@@ -343,7 +175,7 @@ export class ExportService {
             staffId: item.staff_id,
             staffName: item.staff?.name || 'Staff Member',
             role: item.staff?.role || 'Stylist',
-            period: item.period || 'September 2026',
+            period: item.period || 'Current Period',
             servicesCompleted: Number(item.services_completed || 0),
             totalServiceRevenue: Number(item.total_revenue || 0),
             incentiveRatePercentage: Number(item.rate_percentage || 15),
@@ -356,198 +188,18 @@ export class ExportService {
       }
     }
 
-    // Default seeded staff incentive records
-    return [
-      {
-        staffId: 'staff-rahul',
-        staffName: 'Rahul',
-        role: 'Hair Stylist',
-        period: 'September 2026',
-        servicesCompleted: 68,
-        totalServiceRevenue: 34200,
-        incentiveRatePercentage: 15,
-        incentiveAmount: 5130,
-        status: 'Approved'
-      },
-      {
-        staffId: 'staff-amit',
-        staffName: 'Amit',
-        role: 'Barber',
-        period: 'September 2026',
-        servicesCompleted: 92,
-        totalServiceRevenue: 13800,
-        incentiveRatePercentage: 12,
-        incentiveAmount: 1656,
-        status: 'Approved'
-      },
-      {
-        staffId: 'staff-priya',
-        staffName: 'Priya',
-        role: 'Skin Specialist',
-        period: 'September 2026',
-        servicesCompleted: 44,
-        totalServiceRevenue: 28600,
-        incentiveRatePercentage: 18,
-        incentiveAmount: 5148,
-        status: 'Approved'
-      },
-      {
-        staffId: 'staff-rahul',
-        staffName: 'Rahul',
-        role: 'Hair Stylist',
-        period: 'August 2026',
-        servicesCompleted: 74,
-        totalServiceRevenue: 37000,
-        incentiveRatePercentage: 15,
-        incentiveAmount: 5550,
-        status: 'Paid'
-      },
-      {
-        staffId: 'staff-amit',
-        staffName: 'Amit',
-        role: 'Barber',
-        period: 'August 2026',
-        servicesCompleted: 104,
-        totalServiceRevenue: 15600,
-        incentiveRatePercentage: 12,
-        incentiveAmount: 1872,
-        status: 'Paid'
-      },
-      {
-        staffId: 'staff-priya',
-        staffName: 'Priya',
-        role: 'Skin Specialist',
-        period: 'August 2026',
-        servicesCompleted: 51,
-        totalServiceRevenue: 33150,
-        incentiveRatePercentage: 18,
-        incentiveAmount: 5967,
-        status: 'Paid'
-      }
-    ];
+    // Default empty when offline or no records
+    return [];
   }
 
   // --- SALARY & PAYROLL MANAGEMENT ---
 
-  private readonly payrollStore = signal<StaffPayrollRecord[]>([
-    {
-      id: 'pay-2026-09-rahul',
-      staffId: 'staff-rahul',
-      staffName: 'Rahul',
-      role: 'Hair Stylist',
-      period: 'September 2026',
-      baseSalary: 25000,
-      servicesCompleted: 68,
-      totalServiceRevenue: 34200,
-      incentiveRatePercentage: 15,
-      incentiveAmount: 5130, // 34200 * 0.15
-      attendanceDays: 26,
-      absentDays: 0,
-      attendanceDeductions: 0,
-      bonusAmount: 1000,
-      netSalaryPayable: 31130, // 25000 + 5130 + 1000 - 0
-      payoutStatus: 'Approved',
-      paymentMethod: 'Bank Transfer (NEFT)'
-    },
-    {
-      id: 'pay-2026-09-amit',
-      staffId: 'staff-amit',
-      staffName: 'Amit',
-      role: 'Barber',
-      period: 'September 2026',
-      baseSalary: 22000,
-      servicesCompleted: 92,
-      totalServiceRevenue: 13800,
-      incentiveRatePercentage: 12,
-      incentiveAmount: 1656, // 13800 * 0.12
-      attendanceDays: 25,
-      absentDays: 1,
-      attendanceDeductions: 846, // 1 day deduction (22000/26)
-      bonusAmount: 500,
-      netSalaryPayable: 23310, // 22000 + 1656 + 500 - 846
-      payoutStatus: 'Approved',
-      paymentMethod: 'Bank Transfer (NEFT)'
-    },
-    {
-      id: 'pay-2026-09-priya',
-      staffId: 'staff-priya',
-      staffName: 'Priya',
-      role: 'Skin Specialist',
-      period: 'September 2026',
-      baseSalary: 24000,
-      servicesCompleted: 44,
-      totalServiceRevenue: 28600,
-      incentiveRatePercentage: 18,
-      incentiveAmount: 5148, // 28600 * 0.18
-      attendanceDays: 26,
-      absentDays: 0,
-      attendanceDeductions: 0,
-      bonusAmount: 1200,
-      netSalaryPayable: 30348, // 24000 + 5148 + 1200 - 0
-      payoutStatus: 'Approved',
-      paymentMethod: 'UPI'
-    },
-    {
-      id: 'pay-2026-08-rahul',
-      staffId: 'staff-rahul',
-      staffName: 'Rahul',
-      role: 'Hair Stylist',
-      period: 'August 2026',
-      baseSalary: 25000,
-      servicesCompleted: 74,
-      totalServiceRevenue: 37000,
-      incentiveRatePercentage: 15,
-      incentiveAmount: 5550,
-      attendanceDays: 26,
-      absentDays: 0,
-      attendanceDeductions: 0,
-      bonusAmount: 1000,
-      netSalaryPayable: 31550,
-      payoutStatus: 'Paid',
-      paymentDate: '2026-09-01',
-      paymentMethod: 'Bank Transfer (NEFT)'
-    },
-    {
-      id: 'pay-2026-08-amit',
-      staffId: 'staff-amit',
-      staffName: 'Amit',
-      role: 'Barber',
-      period: 'August 2026',
-      baseSalary: 22000,
-      servicesCompleted: 104,
-      totalServiceRevenue: 15600,
-      incentiveRatePercentage: 12,
-      incentiveAmount: 1872,
-      attendanceDays: 26,
-      absentDays: 0,
-      attendanceDeductions: 0,
-      bonusAmount: 500,
-      netSalaryPayable: 24372,
-      payoutStatus: 'Paid',
-      paymentDate: '2026-09-01',
-      paymentMethod: 'Bank Transfer (NEFT)'
-    },
-    {
-      id: 'pay-2026-08-priya',
-      staffId: 'staff-priya',
-      staffName: 'Priya',
-      role: 'Skin Specialist',
-      period: 'August 2026',
-      baseSalary: 24000,
-      servicesCompleted: 51,
-      totalServiceRevenue: 33150,
-      incentiveRatePercentage: 18,
-      incentiveAmount: 5967,
-      attendanceDays: 26,
-      absentDays: 0,
-      attendanceDeductions: 0,
-      bonusAmount: 1000,
-      netSalaryPayable: 30967,
-      payoutStatus: 'Paid',
-      paymentDate: '2026-09-01',
-      paymentMethod: 'UPI'
-    }
-  ]);
+  private readonly payrollStore = signal<StaffPayrollRecord[]>([]);
+
+  // Helper for unit tests to populate test fixtures in memory
+  seedTestDataForTesting(records: StaffPayrollRecord[]): void {
+    this.payrollStore.set(records);
+  }
 
   /**
    * Retrieves staff payroll records.

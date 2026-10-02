@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, ViewChild, ElementRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AdminService } from '../../../core/services/admin.service';
@@ -62,9 +62,27 @@ import { SalonService } from '../../../core/models/service.model';
               <span>•</span>
               <span class="eod-stat-chip">Approved: <strong class="text-success">{{ dayReviewStats().approvedCount }}</strong></span>
             </div>
+
+            <!-- Cash vs Digital Settlement Summary (Feature 2.3) -->
+            <div class="eod-settlement-bar">
+              <span class="settle-chip"><span class="settle-label">💵 Cash Drawer:</span> <strong>₹{{ dayReviewStats().cashTotal | number }}</strong></span>
+              <span class="settle-divider">•</span>
+              <span class="settle-chip"><span class="settle-label">📱 UPI / Card:</span> <strong>₹{{ dayReviewStats().digitalTotal | number }}</strong></span>
+              <span class="settle-divider">•</span>
+              <span class="settle-chip"><span class="settle-label">🏷️ Total Settlement:</span> <strong class="text-gold">₹{{ dayReviewStats().totalRevenue | number }}</strong></span>
+            </div>
           </div>
 
           <div class="eod-actions">
+            <!-- Feature 2.1: Exceptions & Pending Only Quick Filter -->
+            <button 
+              type="button" 
+              class="btn btn-outline eod-exceptions-btn" 
+              [class.active]="exceptionsOnly()"
+              (click)="toggleExceptionsFilter()">
+              ⚡ {{ exceptionsOnly() ? 'Showing Exceptions (' + dayReviewStats().pendingReview + ')' : 'Filter Exceptions Only (' + dayReviewStats().pendingReview + ')' }}
+            </button>
+
             <button 
               type="button" 
               class="btn btn-primary eod-approve-all-btn" 
@@ -75,6 +93,24 @@ import { SalonService } from '../../../core/models/service.model';
           </div>
         </div>
       }
+
+      <!-- Universal Search Bar (Feature 6.1) -->
+      <div class="search-bar-wrap">
+        <div class="search-input-inner">
+          <span class="search-icon">🔍</span>
+          <input 
+            #universalSearchInput
+            type="text" 
+            class="form-control universal-search-input" 
+            placeholder="Search by client name, phone number, or booking ID... (Press ⌘K or Ctrl+K)"
+            [value]="searchQuery()"
+            (input)="onSearchInput($event)">
+          @if (searchQuery()) {
+            <button type="button" class="clear-search-btn" (click)="clearSearch()" title="Clear Search">✕</button>
+          }
+          <kbd class="search-kbd" (click)="focusSearch()" title="Keyboard shortcut: ⌘K or Ctrl+K">⌘K</kbd>
+        </div>
+      </div>
 
       <!-- Filter Controls Toolbar -->
       <div class="croppers-card toolbar-card">
@@ -212,7 +248,12 @@ import { SalonService } from '../../../core/models/service.model';
       } @else {
         <div class="appointments-grid">
           @for (apt of filteredAppointments(); track apt.id) {
-            <div class="croppers-card appointment-card" [class.unassigned-card]="apt.assignedStaff.length === 0 && apt.status === 'booked'">
+            <div class="croppers-card appointment-card" 
+                 [class.status-strip-completed]="apt.status === 'completed'"
+                 [class.status-strip-pending]="apt.ownerApprovalStatus === 'pending' && apt.status === 'booked'"
+                 [class.status-strip-booked]="apt.ownerApprovalStatus === 'approved' && apt.status === 'booked'"
+                 [class.status-strip-cancelled]="apt.status === 'cancelled' || apt.status === 'no_show'"
+                 [class.unassigned-card]="apt.assignedStaff.length === 0 && apt.status === 'booked'">
               <!-- LINE 1: CLIENT NAME EMPHASIZED IN BOLD + STATUS & APPROVAL BADGES -->
               <div class="apt-card-top-line">
                 <div class="client-name-box">
@@ -229,7 +270,7 @@ import { SalonService } from '../../../core/models/service.model';
                     <span class="source-pill" [class.walkin]="apt.bookingSource === 'walk_in'" [class.phone]="apt.bookingSource === 'phone_call'" [class.online]="apt.bookingSource === 'online' || !apt.bookingSource">
                       {{ apt.bookingSource === 'phone_call' ? '📞 Phone' : (apt.bookingSource === 'walk_in' ? '🚶 Walk-in' : '🌐 Online') }}
                     </span>
-                    <span class="ref-num">{{ apt.referenceNumber }}</span>
+                    <span class="payment-method-pill">{{ apt.paymentMethod === 'cash' ? '💵 Cash' : '📱 UPI' }}</span>
                   </div>
                 </div>
 
@@ -254,7 +295,7 @@ import { SalonService } from '../../../core/models/service.model';
                 <span class="time-duration">{{ apt.service.durationMinutes }}m duration</span>
               </div>
 
-              <!-- LINE 3: SERVICES LIST & CHARGES BREAKDOWN -->
+              <!-- LINE 3: SERVICES LIST & CHARGES BREAKDOWN WITH INLINE ADD-ON & PRICE DIFF -->
               <div class="apt-services-charges-section">
                 <div class="services-list-strip">
                   @for (srv of (apt.services && apt.services.length > 0 ? apt.services : [apt.service]); track srv.id) {
@@ -263,10 +304,58 @@ import { SalonService } from '../../../core/models/service.model';
                       <span class="srv-pill-price">₹{{ srv.price }}</span>
                     </span>
                   }
+
+                  <!-- Inline Quick Add-on Service (Feature 4.2) -->
+                  @if (apt.status === 'booked') {
+                    <div class="inline-addon-wrapper">
+                      <button 
+                        type="button" 
+                        class="btn-inline-addon" 
+                        (click)="toggleInlineAddon(apt.id)">
+                        + Quick Add-on
+                      </button>
+                      @if (inlineAddonOpenAptId() === apt.id) {
+                        <div class="inline-addon-popover">
+                          <select #inlineSrvSelect class="form-control select-xs">
+                            @for (s of servicesList(); track s.id) {
+                              <option [value]="s.id">{{ s.name }} (₹{{ s.price }})</option>
+                            }
+                          </select>
+                          <button 
+                            type="button" 
+                            class="btn btn-primary btn-xs" 
+                            (click)="addQuickAddon(apt.id, inlineSrvSelect.value)">
+                            Add
+                          </button>
+                          <button 
+                            type="button" 
+                            class="btn btn-ghost btn-xs" 
+                            (click)="toggleInlineAddon(apt.id)">
+                            ✕
+                          </button>
+                        </div>
+                      }
+                    </div>
+                  }
                 </div>
+
                 <div class="charges-summary-row">
-                  <span class="charges-label">Total Charges:</span>
-                  <span class="charges-amount">₹{{ apt.totalPrice || apt.service.price }}</span>
+                  <div class="charges-price-group">
+                    <span class="charges-label">Total Charges:</span>
+                    <span class="charges-amount">₹{{ apt.totalPrice || apt.service.price }}</span>
+
+                    <!-- Feature 2.2: Visual Price Adjustment Diff -->
+                    @if (hasPriceAdjustment(apt)) {
+                      <div class="price-diff-badge" [class.discount]="apt.totalPrice! < getCatalogTotal(apt)" [class.extra]="apt.totalPrice! > getCatalogTotal(apt)">
+                        <span class="diff-original">Catalog: ₹{{ getCatalogTotal(apt) }}</span>
+                        <span class="diff-arrow">→</span>
+                        <strong class="diff-final">₹{{ apt.totalPrice }}</strong>
+                        <span class="diff-tag">
+                          {{ apt.totalPrice! < getCatalogTotal(apt) ? '(-₹' + (getCatalogTotal(apt) - apt.totalPrice!) + ' Discount)' : '(+₹' + (apt.totalPrice! - getCatalogTotal(apt)) + ' Extra)' }}
+                        </span>
+                      </div>
+                    }
+                  </div>
                   @if (apt.customPriceNote) {
                     <span class="charges-note">• {{ apt.customPriceNote }}</span>
                   }
@@ -321,12 +410,6 @@ import { SalonService } from '../../../core/models/service.model';
                     } @else {
                       <span class="staff-pending-note">Pending Superadmin Assignment</span>
                     }
-                  </div>
-                }
-
-                @if (apt.statusChangedBy) {
-                  <div class="audit-status-line">
-                    Status changed by: <strong>{{ apt.statusChangedBy }}</strong>
                   </div>
                 }
               </div>
@@ -396,6 +479,46 @@ import { SalonService } from '../../../core/models/service.model';
                   </div>
                 }
               </div>
+
+              <!-- Feature 3.1: Progressive Disclosure / Expandable Details -->
+              <div class="card-details-toggle-row">
+                <button type="button" class="btn-toggle-details" (click)="toggleCardDetails(apt.id)">
+                  {{ isCardExpanded(apt.id) ? '▲ Hide Full Audit Details' : '▼ View Audit & Details' }}
+                </button>
+              </div>
+
+              @if (isCardExpanded(apt.id)) {
+                <div class="apt-expanded-details">
+                  <div class="detail-row">
+                    <span class="detail-lbl">Booking Reference:</span>
+                    <span class="detail-val font-mono">{{ apt.referenceNumber }}</span>
+                  </div>
+                  @if (apt.createdAt) {
+                    <div class="detail-row">
+                      <span class="detail-lbl">Created At:</span>
+                      <span class="detail-val">{{ formatDateTime(apt.createdAt) }}</span>
+                    </div>
+                  }
+                  @if (apt.statusChangedBy) {
+                    <div class="detail-row">
+                      <span class="detail-lbl">Status Changed By:</span>
+                      <span class="detail-val">{{ apt.statusChangedBy }}</span>
+                    </div>
+                  }
+                  @if (apt.ownerReviewedAt) {
+                    <div class="detail-row">
+                      <span class="detail-lbl">Owner Approved At:</span>
+                      <span class="detail-val">{{ formatDateTime(apt.ownerReviewedAt) }}</span>
+                    </div>
+                  }
+                  @if (apt.notes) {
+                    <div class="detail-row">
+                      <span class="detail-lbl">Booking Notes:</span>
+                      <span class="detail-val">{{ apt.notes }}</span>
+                    </div>
+                  }
+                </div>
+              }
             </div>
           }
         </div>
@@ -471,6 +594,17 @@ import { SalonService } from '../../../core/models/service.model';
               <!-- Charges & Pricing Override -->
               <div class="review-section-box charges-edit-box">
                 <span class="review-section-heading">Pricing & Charges</span>
+                
+                <!-- Quick Modifiers (Feature 4.1) -->
+                <div class="quick-discount-row">
+                  <span class="quick-disc-label">Quick Modifiers:</span>
+                  <button type="button" class="btn-disc-chip" (click)="applyQuickDiscount(10)">-10%</button>
+                  <button type="button" class="btn-disc-chip" (click)="applyQuickDiscount(15)">-15%</button>
+                  <button type="button" class="btn-disc-chip" (click)="applyQuickDiscount(20)">-20%</button>
+                  <button type="button" class="btn-disc-chip" (click)="applyRoundTo50()">Round ₹50</button>
+                  <button type="button" class="btn-disc-chip reset" (click)="resetToCatalogPrice()">Reset to Catalog</button>
+                </div>
+
                 <div class="charges-edit-grid">
                   <div class="form-group">
                     <label class="form-label">Final Amount / Charges (₹) *</label>
@@ -480,14 +614,23 @@ import { SalonService } from '../../../core/models/service.model';
                       [value]="reviewFinalPrice()" 
                       (input)="onFinalPriceChange($event)"
                       min="0">
-                    <span class="field-hint">Catalog total is ₹{{ reviewCatalogPrice() }}. Edit charges or apply discounts here.</span>
+
+                    <!-- Live Price Diff Chip (Feature 2.2) -->
+                    @if (reviewFinalPrice() !== reviewCatalogPrice()) {
+                      <div class="review-price-diff-chip" [class.discount]="reviewFinalPrice() < reviewCatalogPrice()" [class.extra]="reviewFinalPrice() > reviewCatalogPrice()">
+                        Catalog: ₹{{ reviewCatalogPrice() }} → Final: ₹{{ reviewFinalPrice() }}
+                        ({{ reviewFinalPrice() < reviewCatalogPrice() ? '-₹' + (reviewCatalogPrice() - reviewFinalPrice()) + ' Discount' : '+₹' + (reviewFinalPrice() - reviewCatalogPrice()) + ' Extra' }})
+                      </div>
+                    } @else {
+                      <span class="field-hint">Matches standard catalog total (₹{{ reviewCatalogPrice() }}).</span>
+                    }
                   </div>
                   <div class="form-group">
                     <label class="form-label">Price Adjustment Reason / Note (Optional)</label>
                     <input 
                       type="text" 
                       class="form-control" 
-                      placeholder="e.g. Combo Discount, VIP Courtesy, Extra Styling"
+                      placeholder="e.g. 10% Courtesy Discount, VIP Courtesy, Extra Styling"
                       [value]="reviewPriceNote()" 
                       (input)="onPriceNoteChange($event)">
                   </div>
@@ -668,6 +811,8 @@ export class AdminAppointmentsComponent implements OnInit {
   readonly adminService = inject(AdminService);
   private readonly fb = inject(FormBuilder);
 
+  @ViewChild('universalSearchInput') searchInputRef?: ElementRef<HTMLInputElement>;
+
   readonly appointments = signal<AdminAppointment[]>([]);
   readonly staffList = signal<StaffMember[]>([]);
   readonly servicesList = signal<SalonService[]>([]);
@@ -677,6 +822,20 @@ export class AdminAppointmentsComponent implements OnInit {
   readonly selectedStatus = signal<'all' | 'booked' | 'completed' | 'cancelled' | 'no_show'>('all');
   readonly unassignedOnly = signal<boolean>(false);
   readonly selectedStaffId = signal<string>('');
+
+  // Feature 6.1, 2.1, 3.1 & 4.2 Signals
+  readonly searchQuery = signal<string>('');
+  readonly exceptionsOnly = signal<boolean>(false);
+  readonly expandedCardIds = signal<Set<string>>(new Set());
+  readonly inlineAddonOpenAptId = signal<string | null>(null);
+
+  @HostListener('window:keydown', ['$event'])
+  handleGlobalKeyDown(event: KeyboardEvent): void {
+    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+      event.preventDefault();
+      this.focusSearch();
+    }
+  }
 
   readonly currentStaffMember = computed(() => {
     const staffId = this.adminService.currentStaffId();
@@ -771,10 +930,32 @@ export class AdminAppointmentsComponent implements OnInit {
       }
     }
 
+    // Feature 2.1: Exceptions & Pending Only Filter
+    if (this.exceptionsOnly()) {
+      list = list.filter(a =>
+        a.ownerApprovalStatus === 'pending' ||
+        a.bookingSource === 'walk_in' ||
+        a.bookingSource === 'phone_call' ||
+        !!a.customPriceNote ||
+        this.hasPriceAdjustment(a) ||
+        (a.status !== 'booked')
+      );
+    }
+
+    // Feature 6.1: Universal Instant Search
+    const q = this.searchQuery().trim().toLowerCase();
+    if (q) {
+      list = list.filter(a =>
+        a.customer.name.toLowerCase().includes(q) ||
+        a.customer.phone.includes(q) ||
+        a.referenceNumber.toLowerCase().includes(q)
+      );
+    }
+
     return list;
   });
 
-  // End-of-Day Review Stats (Requirement 1)
+  // End-of-Day Review Stats with Cash vs Digital breakdown (Requirement 1 & Feature 2.3)
   readonly dayReviewStats = computed(() => {
     const list = this.filteredAppointments();
     const totalBookings = list.length;
@@ -783,7 +964,17 @@ export class AdminAppointmentsComponent implements OnInit {
     const pendingReview = list.filter(a => a.ownerApprovalStatus === 'pending').length;
     const approvedCount = list.filter(a => a.ownerApprovalStatus === 'approved').length;
     const totalRevenue = list.filter(a => a.status === 'completed').reduce((sum, a) => sum + (a.totalPrice || a.service.price || 0), 0);
-    return { totalBookings, completed, walkinOrPhone, pendingReview, approvedCount, totalRevenue };
+
+    // Feature 2.3: Cash vs Digital Settlement
+    const completedList = list.filter(a => a.status === 'completed');
+    const cashTotal = completedList
+      .filter(a => a.paymentMethod === 'cash' || (!a.paymentMethod && a.bookingSource === 'walk_in'))
+      .reduce((sum, a) => sum + (a.totalPrice || a.service.price || 0), 0);
+    const digitalTotal = completedList
+      .filter(a => a.paymentMethod === 'upi' || a.paymentMethod === 'card' || (!a.paymentMethod && a.bookingSource !== 'walk_in'))
+      .reduce((sum, a) => sum + (a.totalPrice || a.service.price || 0), 0);
+
+    return { totalBookings, completed, walkinOrPhone, pendingReview, approvedCount, totalRevenue, cashTotal, digitalTotal };
   });
 
   setDateMode(mode: 'today' | 'tomorrow' | 'all'): void {
@@ -1012,6 +1203,111 @@ export class AdminAppointmentsComponent implements OnInit {
     hour = hour % 12;
     if (hour === 0) hour = 12;
     return `${hour}:${minute} ${ampm}`;
+  }
+
+  // Feature 6.1: Search Helpers
+  onSearchInput(event: Event): void {
+    const val = (event.target as HTMLInputElement).value;
+    this.searchQuery.set(val);
+  }
+
+  clearSearch(): void {
+    this.searchQuery.set('');
+    if (this.searchInputRef) {
+      this.searchInputRef.nativeElement.value = '';
+      this.searchInputRef.nativeElement.focus();
+    }
+  }
+
+  focusSearch(): void {
+    if (this.searchInputRef) {
+      this.searchInputRef.nativeElement.focus();
+      this.searchInputRef.nativeElement.select();
+    }
+  }
+
+  // Feature 2.1: Exceptions Filter Helper
+  toggleExceptionsFilter(): void {
+    this.exceptionsOnly.update(v => !v);
+  }
+
+  // Feature 2.2: Price Difference Calculation
+  getCatalogTotal(apt: AdminAppointment): number {
+    if (apt.services && apt.services.length > 0) {
+      return apt.services.reduce((sum, s) => sum + s.price, 0);
+    }
+    return apt.service.price;
+  }
+
+  hasPriceAdjustment(apt: AdminAppointment): boolean {
+    if (apt.totalPrice === undefined) return false;
+    return apt.totalPrice !== this.getCatalogTotal(apt);
+  }
+
+  // Feature 3.1: Progressive Disclosure / Card Details
+  toggleCardDetails(aptId: string): void {
+    this.expandedCardIds.update(set => {
+      const next = new Set(set);
+      if (next.has(aptId)) {
+        next.delete(aptId);
+      } else {
+        next.add(aptId);
+      }
+      return next;
+    });
+  }
+
+  isCardExpanded(aptId: string): boolean {
+    return this.expandedCardIds().has(aptId);
+  }
+
+  // Feature 4.2: Inline Add-on Service
+  toggleInlineAddon(aptId: string): void {
+    this.inlineAddonOpenAptId.update(current => (current === aptId ? null : aptId));
+  }
+
+  async addQuickAddon(aptId: string, srvId: string): Promise<void> {
+    const res = await this.adminService.addQuickAddonService(aptId, srvId);
+    if (res) {
+      await this.refreshData();
+      this.showToast(`Quick add-on service added to booking ${res.referenceNumber}.`);
+      this.inlineAddonOpenAptId.set(null);
+    }
+  }
+
+  // Feature 4.1: Quick Modifiers in Review Modal
+  applyQuickDiscount(percent: number): void {
+    const catalog = this.reviewCatalogPrice();
+    const discounted = Math.round(catalog * (1 - percent / 100));
+    this.reviewFinalPrice.set(discounted);
+    this.reviewPriceNote.set(`${percent}% Owner Courtesy Discount`);
+  }
+
+  applyRoundTo50(): void {
+    const current = this.reviewFinalPrice();
+    const rounded = Math.round(current / 50) * 50;
+    this.reviewFinalPrice.set(rounded);
+  }
+
+  resetToCatalogPrice(): void {
+    this.reviewFinalPrice.set(this.reviewCatalogPrice());
+    this.reviewPriceNote.set('');
+  }
+
+  formatDateTime(iso?: string): string {
+    if (!iso) return '';
+    try {
+      const d = new Date(iso);
+      return d.toLocaleString('en-IN', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch {
+      return iso;
+    }
   }
 
   private getTodayIso(): string {

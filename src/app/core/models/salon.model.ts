@@ -3,8 +3,9 @@ export interface Salon {
   name: string;
   phone: string;
   city: string;
-  state: string;
-  country: string;
+  state?: string;
+  country?: string;
+  slug?: string;
   timezone: string;
   currency: string;
   openingHours?: SalonOpeningHour[];

@@ -1288,3 +1288,374 @@
     padding: 10px 12px;
   }
 }
+
+/* Feature 6.1: Universal Instant Search Bar */
+.search-bar-wrap {
+  margin-bottom: 16px;
+}
+
+.search-input-inner {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-icon {
+  position: absolute;
+  left: 14px;
+  font-size: 1rem;
+  color: var(--color-muted);
+  pointer-events: none;
+}
+
+.universal-search-input {
+  width: 100%;
+  padding: 12px 75px 12px 42px;
+  background: var(--color-surface);
+  border: 1px solid rgba(28, 25, 23, 0.15);
+  border-radius: 8px;
+  font-size: 0.95rem;
+  color: var(--color-light);
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+}
+
+.universal-search-input:focus {
+  outline: none;
+  border-color: var(--color-gold);
+  box-shadow: 0 0 0 3px rgba(181, 136, 64, 0.15);
+}
+
+.search-kbd {
+  position: absolute;
+  right: 14px;
+  background: rgba(28, 25, 23, 0.06);
+  border: 1px solid rgba(28, 25, 23, 0.15);
+  border-radius: 4px;
+  padding: 3px 7px;
+  font-size: 0.72rem;
+  font-family: inherit;
+  font-weight: 600;
+  color: var(--color-muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+.clear-search-btn {
+  position: absolute;
+  right: 48px;
+  background: none;
+  border: none;
+  color: var(--color-muted);
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.clear-search-btn:hover {
+  color: var(--color-light);
+}
+
+/* Feature 2.3: EOD Cash vs Digital Settlement Bar */
+.eod-settlement-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(181, 136, 64, 0.25);
+  font-size: 0.84rem;
+}
+
+.settle-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--color-light);
+}
+
+.settle-label {
+  color: var(--color-muted);
+  font-size: 0.78rem;
+}
+
+.settle-divider {
+  color: rgba(181, 136, 64, 0.4);
+}
+
+/* Feature 2.1: Exceptions Filter Button */
+.eod-exceptions-btn {
+  border: 1px solid rgba(181, 136, 64, 0.4);
+  color: var(--color-gold);
+  background: transparent;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.eod-exceptions-btn:hover,
+.eod-exceptions-btn.active {
+  background: rgba(181, 136, 64, 0.15);
+  border-color: var(--color-gold);
+  color: #ffffff;
+}
+
+/* Feature 3.2: Color-Coded Status Accent Strip (4px Left Edge) */
+.appointment-card.status-strip-completed {
+  border-left: 5px solid #22c55e !important;
+}
+
+.appointment-card.status-strip-pending {
+  border-left: 5px solid #f59e0b !important;
+}
+
+.appointment-card.status-strip-booked {
+  border-left: 5px solid #3b82f6 !important;
+}
+
+.appointment-card.status-strip-cancelled {
+  border-left: 5px solid #ef4444 !important;
+}
+
+/* Payment Method Pill */
+.payment-method-pill {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: rgba(28, 25, 23, 0.05);
+  color: var(--color-muted);
+  border: 1px solid rgba(28, 25, 23, 0.1);
+}
+
+/* Feature 2.2: Visual Price Adjustment Diff */
+.charges-price-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.price-diff-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.76rem;
+  background: #fdfbf7;
+  border: 1px solid rgba(181, 136, 64, 0.3);
+}
+
+.price-diff-badge.discount {
+  background: #f0fdf4;
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+.price-diff-badge.extra {
+  background: #fef2f2;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.diff-original {
+  color: var(--color-muted);
+  text-decoration: line-through;
+  font-size: 0.72rem;
+}
+
+.diff-arrow {
+  color: var(--color-muted);
+}
+
+.diff-final {
+  color: var(--color-light);
+  font-weight: 700;
+}
+
+.diff-tag {
+  font-weight: 600;
+  color: #166534;
+}
+
+.price-diff-badge.extra .diff-tag {
+  color: #991b1b;
+}
+
+.review-price-diff-chip {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid rgba(34, 197, 94, 0.25);
+}
+
+.review-price-diff-chip.extra {
+  background: #fef2f2;
+  color: #991b1b;
+  border-color: rgba(239, 68, 68, 0.25);
+}
+
+/* Feature 3.1: Progressive Disclosure (Collapsible Card Details) */
+.card-details-toggle-row {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(28, 25, 23, 0.08);
+}
+
+.btn-toggle-details {
+  background: none;
+  border: none;
+  font-size: 0.75rem;
+  color: var(--color-muted);
+  cursor: pointer;
+  padding: 2px 0;
+  font-weight: 600;
+  transition: color 0.15s ease;
+}
+
+.btn-toggle-details:hover {
+  color: var(--color-gold);
+}
+
+.apt-expanded-details {
+  margin-top: 8px;
+  padding: 10px 12px;
+  background: rgba(28, 25, 23, 0.02);
+  border: 1px solid rgba(28, 25, 23, 0.06);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 0.78rem;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.detail-lbl {
+  color: var(--color-muted);
+}
+
+.detail-val {
+  color: var(--color-light);
+  font-weight: 500;
+  text-align: right;
+}
+
+.detail-val.font-mono {
+  font-family: monospace;
+}
+
+/* Feature 4.2: Inline Quick Add-on Service */
+.inline-addon-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.btn-inline-addon {
+  background: rgba(181, 136, 64, 0.08);
+  border: 1px dashed rgba(181, 136, 64, 0.4);
+  color: var(--color-gold);
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-inline-addon:hover {
+  background: rgba(181, 136, 64, 0.16);
+  border-style: solid;
+}
+
+.inline-addon-popover {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 20;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #ffffff;
+  border: 1px solid rgba(28, 25, 23, 0.15);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  border-radius: 6px;
+  padding: 6px 8px;
+  min-width: 250px;
+}
+
+.select-xs {
+  font-size: 0.78rem;
+  padding: 4px 6px;
+  height: 28px;
+}
+
+.btn-xs {
+  font-size: 0.75rem;
+  padding: 3px 8px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Feature 4.1: Quick Discount Modifier Chips */
+.quick-discount-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.quick-disc-label {
+  font-size: 0.78rem;
+  color: var(--color-muted);
+  font-weight: 600;
+}
+
+.btn-disc-chip {
+  background: rgba(28, 25, 23, 0.04);
+  border: 1px solid rgba(28, 25, 23, 0.12);
+  border-radius: 16px;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-light);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-disc-chip:hover {
+  background: rgba(181, 136, 64, 0.12);
+  border-color: var(--color-gold);
+  color: var(--color-gold);
+}
+
+.btn-disc-chip.reset {
+  color: var(--color-muted);
+  border-style: dashed;
+}
+
+.btn-disc-chip.reset:hover {
+  color: #ef4444;
+  border-color: #ef4444;
+  background: #fef2f2;
+}

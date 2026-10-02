@@ -6,11 +6,132 @@ describe('ExportService (Salon Payroll & Incentive System)', () => {
   let exportService: ExportService;
   let adminService: AdminService;
 
+  const testPayrollRecords = [
+    {
+      id: 'pay-2026-09-rahul',
+      staffId: 'staff-rahul',
+      staffName: 'Rahul',
+      role: 'Hair Stylist',
+      period: 'September 2026',
+      baseSalary: 25000,
+      servicesCompleted: 68,
+      totalServiceRevenue: 34200,
+      incentiveRatePercentage: 15,
+      incentiveAmount: 5130,
+      attendanceDays: 26,
+      absentDays: 0,
+      attendanceDeductions: 0,
+      bonusAmount: 1000,
+      netSalaryPayable: 31130,
+      payoutStatus: 'Approved' as const,
+      paymentMethod: 'Bank Transfer (NEFT)'
+    },
+    {
+      id: 'pay-2026-09-amit',
+      staffId: 'staff-amit',
+      staffName: 'Amit',
+      role: 'Barber',
+      period: 'September 2026',
+      baseSalary: 22000,
+      servicesCompleted: 92,
+      totalServiceRevenue: 13800,
+      incentiveRatePercentage: 12,
+      incentiveAmount: 1656,
+      attendanceDays: 25,
+      absentDays: 1,
+      attendanceDeductions: 846,
+      bonusAmount: 500,
+      netSalaryPayable: 23310,
+      payoutStatus: 'Approved' as const,
+      paymentMethod: 'Bank Transfer (NEFT)'
+    },
+    {
+      id: 'pay-2026-09-priya',
+      staffId: 'staff-priya',
+      staffName: 'Priya',
+      role: 'Skin Specialist',
+      period: 'September 2026',
+      baseSalary: 24000,
+      servicesCompleted: 44,
+      totalServiceRevenue: 28600,
+      incentiveRatePercentage: 18,
+      incentiveAmount: 5148,
+      attendanceDays: 26,
+      absentDays: 0,
+      attendanceDeductions: 0,
+      bonusAmount: 1200,
+      netSalaryPayable: 30348,
+      payoutStatus: 'Approved' as const,
+      paymentMethod: 'UPI'
+    },
+    {
+      id: 'pay-2026-08-rahul',
+      staffId: 'staff-rahul',
+      staffName: 'Rahul',
+      role: 'Hair Stylist',
+      period: 'August 2026',
+      baseSalary: 25000,
+      servicesCompleted: 74,
+      totalServiceRevenue: 37000,
+      incentiveRatePercentage: 15,
+      incentiveAmount: 5550,
+      attendanceDays: 26,
+      absentDays: 0,
+      attendanceDeductions: 0,
+      bonusAmount: 1000,
+      netSalaryPayable: 31550,
+      payoutStatus: 'Paid' as const,
+      paymentDate: '2026-09-01',
+      paymentMethod: 'Bank Transfer (NEFT)'
+    },
+    {
+      id: 'pay-2026-08-amit',
+      staffId: 'staff-amit',
+      staffName: 'Amit',
+      role: 'Barber',
+      period: 'August 2026',
+      baseSalary: 22000,
+      servicesCompleted: 104,
+      totalServiceRevenue: 15600,
+      incentiveRatePercentage: 12,
+      incentiveAmount: 1872,
+      attendanceDays: 26,
+      absentDays: 0,
+      attendanceDeductions: 0,
+      bonusAmount: 500,
+      netSalaryPayable: 24372,
+      payoutStatus: 'Paid' as const,
+      paymentDate: '2026-09-01',
+      paymentMethod: 'Bank Transfer (NEFT)'
+    },
+    {
+      id: 'pay-2026-08-priya',
+      staffId: 'staff-priya',
+      staffName: 'Priya',
+      role: 'Skin Specialist',
+      period: 'August 2026',
+      baseSalary: 24000,
+      servicesCompleted: 51,
+      totalServiceRevenue: 33150,
+      incentiveRatePercentage: 18,
+      incentiveAmount: 5967,
+      attendanceDays: 26,
+      absentDays: 0,
+      attendanceDeductions: 0,
+      bonusAmount: 1000,
+      netSalaryPayable: 30967,
+      payoutStatus: 'Paid' as const,
+      paymentDate: '2026-09-01',
+      paymentMethod: 'UPI'
+    }
+  ];
+
   beforeEach(() => {
     localStorage.clear();
     TestBed.configureTestingModule({});
     exportService = TestBed.inject(ExportService);
     adminService = TestBed.inject(AdminService);
+    exportService.seedTestDataForTesting(JSON.parse(JSON.stringify(testPayrollRecords)));
   });
 
   afterEach(() => {

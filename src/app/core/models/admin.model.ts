@@ -71,6 +71,7 @@ export interface AdminAppointment {
   services?: AppointmentServiceItem[]; // Multi-service item breakdown
   totalPrice?: number; // Total charges (sum of services or custom edited charges)
   customPriceNote?: string; // e.g. "Special VIP rate", "Extra conditioning applied"
+  paymentMethod?: 'cash' | 'upi' | 'card'; // Settlement method
   bookingSource?: 'online' | 'walk_in' | 'phone_call';
   bookedByStaffId?: string;
   bookedByStaffName?: string;
@@ -90,6 +91,7 @@ export interface CreateManualAppointmentPayload {
   serviceIds?: string[];
   services?: AppointmentServiceItem[];
   customPrice?: number;
+  paymentMethod?: 'cash' | 'upi' | 'card';
   date: string;
   startTime: string;
   staffId?: string; // Optional direct staff assignment
@@ -101,6 +103,7 @@ export interface ReviewAndEditAppointmentPayload {
   services: AppointmentServiceItem[];
   finalPrice: number;
   priceAdjustmentNote?: string;
+  paymentMethod?: 'cash' | 'upi' | 'card';
   assignedStaff: StaffMember[];
   notes?: string;
   approveNow?: boolean;
@@ -121,6 +124,8 @@ export interface AppointmentFilter {
   status?: 'all' | 'booked' | 'completed' | 'cancelled' | 'no_show';
   unassignedOnly?: boolean;
   staffId?: string; // Filter by assigned staff member
+  exceptionsOnly?: boolean; // Filter only pending review, walk-ins, phone, or custom priced
+  searchTerm?: string; // Search across client name, phone, ref
 }
 
 export interface CreateServicePayload {
@@ -134,9 +139,23 @@ export interface CreateServicePayload {
 
 export interface UpdateServicePayload {
   name?: string;
+  category_id?: string;
   category_name?: string;
   duration_minutes?: number;
   price?: number;
   description?: string;
+  image_url?: string;
   is_active?: boolean;
+}
+
+export interface CreateCategoryPayload {
+  name: string;
+  description?: string;
+  display_order?: number;
+}
+
+export interface UpdateCategoryPayload {
+  name?: string;
+  description?: string;
+  display_order?: number;
 }

@@ -28,6 +28,16 @@ export class SupabaseService {
         auth: {
           persistSession: false,
           autoRefreshToken: false
+        },
+        global: {
+          fetch: (input, init) => {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 300);
+            return fetch(input, {
+              ...init,
+              signal: controller.signal
+            }).finally(() => clearTimeout(timeout));
+          }
         }
       });
       this.isConfigured = true;

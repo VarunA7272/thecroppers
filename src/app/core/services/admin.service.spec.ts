@@ -1,13 +1,243 @@
 import { TestBed } from '@angular/core/testing';
 import { AdminService } from './admin.service';
+import { SupabaseService } from './supabase.service';
 
 describe('AdminService (Staff vs Superadmin Strict Data Isolation)', () => {
   let service: AdminService;
 
+  const mockStaffList = [
+    {
+      id: 'staff-rahul',
+      salon_id: 'f8d3c307-37a2-465c-902f-e023974aa562',
+      name: 'Rahul',
+      role: 'Hair Stylist',
+      specialization: 'hair',
+      phone: '+91 98765 43211',
+      is_active: true,
+      base_salary: 25000,
+      incentive_percentage: 15
+    },
+    {
+      id: 'staff-amit',
+      salon_id: 'f8d3c307-37a2-465c-902f-e023974aa562',
+      name: 'Amit',
+      role: 'Barber',
+      specialization: 'beard',
+      phone: '+91 98765 43212',
+      is_active: true,
+      base_salary: 22000,
+      incentive_percentage: 12
+    },
+    {
+      id: 'staff-priya',
+      salon_id: 'f8d3c307-37a2-465c-902f-e023974aa562',
+      name: 'Priya',
+      role: 'Skin Specialist',
+      specialization: 'skin',
+      phone: '+91 98765 43213',
+      is_active: true,
+      base_salary: 24000,
+      incentive_percentage: 18
+    }
+  ];
+
+  const mockServicesList = [
+    {
+      id: 'srv-haircut',
+      salon_id: 'f8d3c307-37a2-465c-902f-e023974aa562',
+      category_name: 'Hair',
+      name: 'Haircut',
+      description: 'Signature tailored haircut',
+      duration_minutes: 30,
+      price: 200,
+      image_url: '',
+      is_active: true
+    },
+    {
+      id: 'srv-hair-colour',
+      salon_id: 'f8d3c307-37a2-465c-902f-e023974aa562',
+      category_name: 'Hair',
+      name: 'Hair Colour',
+      description: 'Custom chromatic formulation',
+      duration_minutes: 90,
+      price: 800,
+      image_url: '',
+      is_active: true
+    },
+    {
+      id: 'srv-facial',
+      salon_id: 'f8d3c307-37a2-465c-902f-e023974aa562',
+      category_name: 'Skin',
+      name: 'Facial',
+      description: 'Complete dermal detox',
+      duration_minutes: 60,
+      price: 700,
+      image_url: '',
+      is_active: true
+    },
+    {
+      id: 'srv-shave',
+      salon_id: 'f8d3c307-37a2-465c-902f-e023974aa562',
+      category_name: 'Beard',
+      name: 'Shave',
+      description: 'Traditional straight razor shave',
+      duration_minutes: 20,
+      price: 100,
+      image_url: '',
+      is_active: true
+    },
+    {
+      id: 'srv-beard-trim',
+      salon_id: 'f8d3c307-37a2-465c-902f-e023974aa562',
+      category_name: 'Beard',
+      name: 'Beard Trim',
+      description: 'Sculpted line definition',
+      duration_minutes: 15,
+      price: 100,
+      image_url: '',
+      is_active: true
+    }
+  ];
+
+  const mockAppointmentsList = [
+    {
+      id: 'apt-101',
+      referenceNumber: 'TCP-829101',
+      salonId: 'f8d3c307-37a2-465c-902f-e023974aa562',
+      date: new Date().toISOString().split('T')[0],
+      startTime: '10:00:00',
+      endTime: '10:30:00',
+      status: 'booked' as const,
+      customer: { name: 'Vikram Sharma', phone: '9826112233' },
+      service: { id: 'srv-haircut', name: 'Haircut', durationMinutes: 30, price: 200, categoryName: 'Hair' },
+      services: [{ id: 'srv-haircut', name: 'Haircut', durationMinutes: 30, price: 200, categoryName: 'Hair' }],
+      totalPrice: 200,
+      paymentMethod: 'cash' as const,
+      bookingSource: 'walk_in' as const,
+      bookedByStaffName: 'Rahul (Staff)',
+      ownerApprovalStatus: 'pending' as const,
+      assignedStaff: [],
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: 'apt-102',
+      referenceNumber: 'TCP-829102',
+      salonId: 'f8d3c307-37a2-465c-902f-e023974aa562',
+      date: new Date().toISOString().split('T')[0],
+      startTime: '11:00:00',
+      endTime: '12:30:00',
+      status: 'booked' as const,
+      customer: { name: 'Rohan Mehra', phone: '9826445566' },
+      service: { id: 'srv-hair-colour', name: 'Hair Colour', durationMinutes: 90, price: 800, categoryName: 'Hair' },
+      services: [{ id: 'srv-hair-colour', name: 'Hair Colour', durationMinutes: 90, price: 800, categoryName: 'Hair' }],
+      totalPrice: 800,
+      paymentMethod: 'upi' as const,
+      bookingSource: 'phone_call' as const,
+      bookedByStaffName: 'Rahul (Staff)',
+      ownerApprovalStatus: 'approved' as const,
+      ownerReviewedAt: new Date().toISOString(),
+      assignedStaff: [mockStaffList[0]],
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: 'apt-103',
+      referenceNumber: 'TCP-829103',
+      salonId: 'f8d3c307-37a2-465c-902f-e023974aa562',
+      date: new Date().toISOString().split('T')[0],
+      startTime: '12:00:00',
+      endTime: '12:20:00',
+      status: 'booked' as const,
+      customer: { name: 'Deepak Verma', phone: '9826778899' },
+      service: { id: 'srv-shave', name: 'Shave', durationMinutes: 20, price: 100, categoryName: 'Beard' },
+      services: [{ id: 'srv-shave', name: 'Shave', durationMinutes: 20, price: 100, categoryName: 'Beard' }],
+      totalPrice: 100,
+      paymentMethod: 'cash' as const,
+      bookingSource: 'walk_in' as const,
+      bookedByStaffName: 'Amit (Staff)',
+      ownerApprovalStatus: 'pending' as const,
+      assignedStaff: [],
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: 'apt-104',
+      referenceNumber: 'TCP-829104',
+      salonId: 'f8d3c307-37a2-465c-902f-e023974aa562',
+      date: new Date().toISOString().split('T')[0],
+      startTime: '14:00:00',
+      endTime: '15:00:00',
+      status: 'completed' as const,
+      customer: { name: 'Ananya Gupta', phone: '9826990011' },
+      service: { id: 'srv-facial', name: 'Facial', durationMinutes: 60, price: 700, categoryName: 'Skin' },
+      services: [{ id: 'srv-facial', name: 'Facial', durationMinutes: 60, price: 700, categoryName: 'Skin' }],
+      totalPrice: 700,
+      paymentMethod: 'upi' as const,
+      bookingSource: 'online' as const,
+      ownerApprovalStatus: 'approved' as const,
+      statusChangedBy: 'Priya (Staff)',
+      ownerReviewedAt: new Date().toISOString(),
+      assignedStaff: [mockStaffList[2]],
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: 'apt-106',
+      referenceNumber: 'TCP-829106',
+      salonId: 'f8d3c307-37a2-465c-902f-e023974aa562',
+      date: new Date().toISOString().split('T')[0],
+      startTime: '12:30:00',
+      endTime: '13:00:00',
+      status: 'booked' as const,
+      customer: { name: 'Harsh Vardhan', phone: '9826227788' },
+      service: { id: 'srv-beard-trim', name: 'Beard Trim', durationMinutes: 15, price: 100, categoryName: 'Beard' },
+      services: [{ id: 'srv-beard-trim', name: 'Beard Trim', durationMinutes: 15, price: 100, categoryName: 'Beard' }],
+      totalPrice: 100,
+      paymentMethod: 'cash' as const,
+      bookingSource: 'phone_call' as const,
+      bookedByStaffName: 'Amit (Staff)',
+      ownerApprovalStatus: 'pending' as const,
+      assignedStaff: [mockStaffList[1]],
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: 'apt-109',
+      referenceNumber: 'TCP-829109',
+      salonId: 'f8d3c307-37a2-465c-902f-e023974aa562',
+      date: new Date().toISOString().split('T')[0],
+      startTime: '17:00:00',
+      endTime: '17:45:00',
+      status: 'booked' as const,
+      customer: { name: 'Aditya Singhania', phone: '9826771122' },
+      service: { id: 'srv-haircut', name: 'Haircut + Beard Trim', durationMinutes: 45, price: 300, categoryName: 'Hair & Beard' },
+      services: [
+        { id: 'srv-haircut', name: 'Haircut', durationMinutes: 30, price: 200, categoryName: 'Hair' },
+        { id: 'srv-beard-trim', name: 'Beard Trim', durationMinutes: 15, price: 100, categoryName: 'Beard' }
+      ],
+      totalPrice: 300,
+      paymentMethod: 'upi' as const,
+      bookingSource: 'walk_in' as const,
+      bookedByStaffName: 'Rahul (Staff)',
+      ownerApprovalStatus: 'pending' as const,
+      assignedStaff: [mockStaffList[0], mockStaffList[1]],
+      notes: 'Multi-service: Haircut by Rahul, Beard Trim by Amit',
+      createdAt: new Date().toISOString()
+    }
+  ];
+
   beforeEach(() => {
     localStorage.clear();
-    TestBed.configureTestingModule({});
+    TestBed.configureTestingModule({
+      providers: [
+        {
+          provide: SupabaseService,
+          useValue: { isReady: false, clientInstance: null }
+        }
+      ]
+    });
     service = TestBed.inject(AdminService);
+    service.seedTestDataForTesting(
+      JSON.parse(JSON.stringify(mockStaffList)),
+      JSON.parse(JSON.stringify(mockServicesList)),
+      JSON.parse(JSON.stringify(mockAppointmentsList))
+    );
   });
 
   afterEach(() => {
@@ -342,6 +572,71 @@ describe('AdminService (Staff vs Superadmin Strict Data Isolation)', () => {
       await expect(
         service.updateStaff('staff-rahul', { base_salary: 50000 })
       ).rejects.toThrow(/Unauthorized/);
+    });
+  });
+
+  describe('UX Simplifications and Fast Actions', () => {
+    beforeEach(async () => {
+      await service.login('owner@thecroppers.in', 'password123', 'superadmin');
+    });
+
+    it('should support adding a quick add-on service and recalculate total duration and price', async () => {
+      const apt = (await service.getAppointments()).find(a => a.id === 'apt-101')!;
+      const initialPrice = apt.totalPrice || apt.service.price;
+      const initialDuration = apt.service.durationMinutes;
+
+      const updated = await service.addQuickAddonService('apt-101', 'srv-shave');
+      expect(updated).toBeTruthy();
+      expect(updated?.services?.length).toBe(2);
+      expect(updated?.service.durationMinutes).toBe(initialDuration + 20); // 30m + 20m shave
+      expect(updated?.totalPrice).toBe(initialPrice + 100); // 200 + 100
+      expect(updated?.ownerApprovalStatus).toBe('pending');
+    });
+
+    it('should filter appointments by exceptionsOnly (pending review or walkin/phone)', async () => {
+      const exceptions = await service.getAppointments({ exceptionsOnly: true });
+      expect(exceptions.length).toBeGreaterThan(0);
+      for (const apt of exceptions) {
+        const isException = 
+          apt.ownerApprovalStatus === 'pending' || 
+          apt.bookingSource === 'walk_in' || 
+          apt.bookingSource === 'phone_call' || 
+          !!apt.customPriceNote || 
+          apt.status !== 'booked';
+        expect(isException).toBe(true);
+      }
+    });
+
+    it('should filter appointments by universal searchTerm across name, phone, or reference', async () => {
+      const byName = await service.getAppointments({ searchTerm: 'Rohan' });
+      expect(byName.length).toBeGreaterThanOrEqual(1);
+      expect(byName[0].customer.name).toContain('Rohan');
+
+      const byPhone = await service.getAppointments({ searchTerm: '9826445566' });
+      expect(byPhone.length).toBeGreaterThanOrEqual(1);
+
+      const byRef = await service.getAppointments({ searchTerm: 'TCP-829102' });
+      expect(byRef.length).toBe(1);
+      expect(byRef[0].id).toBe('apt-102');
+    });
+
+    it('should auto-assign staff chair and default paymentMethod on staff walk-in creation', async () => {
+      await service.login('rahul@thecroppers.in', 'password123', 'staff', 'staff-rahul');
+
+      const newApt = await service.createManualAppointment({
+        customerName: 'Gaurav Sen',
+        customerPhone: '9826001122',
+        serviceId: 'srv-haircut',
+        date: new Date().toISOString().split('T')[0],
+        startTime: '16:00',
+        bookingSource: 'walk_in'
+      });
+
+      expect(newApt.assignedStaff.length).toBe(1);
+      expect(newApt.assignedStaff[0].id).toBe('staff-rahul');
+      expect(newApt.paymentMethod).toBe('cash');
+      expect(newApt.ownerApprovalStatus).toBe('pending');
+      expect(newApt.bookedByStaffName).toContain('Rahul');
     });
   });
 });

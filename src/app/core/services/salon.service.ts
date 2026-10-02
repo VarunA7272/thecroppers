@@ -35,100 +35,10 @@ export class SalonInfoService {
   };
 
   /**
-   * Fallback services matching initial database seed
+   * Fallback empty structures when offline
    */
-  private readonly fallbackCategories: ServiceCategory[] = [
-    { id: 'cat-hair', name: 'Hair', description: 'Precision styling, contemporary cutting, and conditioning care', display_order: 1 },
-    { id: 'cat-beard', name: 'Beard', description: 'Master grooming, hot towel razor shaves, and line detailing', display_order: 2 },
-    { id: 'cat-skin', name: 'Skin', description: 'Rejuvenating therapies, deep hydration, and revitalizing treatments', display_order: 3 }
-  ];
-
-  private readonly fallbackServices: SalonService[] = [
-    {
-      id: 'srv-haircut',
-      salon_id: environment.salonId,
-      category_id: 'cat-hair',
-      category_name: 'Hair',
-      name: 'Haircut',
-      description: 'Signature tailored haircut crafted to your facial architecture with neck shave and hot lather rinse.',
-      duration_minutes: 30,
-      price: 200,
-      image_url: 'https://images.unsplash.com/photo-1622286342621-4bd786c2447c?auto=format&fit=crop&w=600&q=80',
-      is_active: true
-    },
-    {
-      id: 'srv-hair-colour',
-      salon_id: environment.salonId,
-      category_id: 'cat-hair',
-      category_name: 'Hair',
-      name: 'Hair Colour',
-      description: 'Custom chromatic formulation with premium ammonia-free tones for seamless dimensional depth.',
-      duration_minutes: 90,
-      price: 800,
-      image_url: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=600&q=80',
-      is_active: true
-    },
-    {
-      id: 'srv-hair-spa',
-      salon_id: environment.salonId,
-      category_id: 'cat-hair',
-      category_name: 'Hair',
-      name: 'Hair Spa',
-      description: 'Deep restorative keratin & botanical scalp ritual with warm steam and pressure-point massage.',
-      duration_minutes: 60,
-      price: 600,
-      image_url: 'https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?auto=format&fit=crop&w=600&q=80',
-      is_active: true
-    },
-    {
-      id: 'srv-beard-trim',
-      salon_id: environment.salonId,
-      category_id: 'cat-beard',
-      category_name: 'Beard',
-      name: 'Beard Trim',
-      description: 'Sculpted line definition, scissor fade, edge detailing, and organic beard oil treatment.',
-      duration_minutes: 15,
-      price: 100,
-      image_url: 'https://images.unsplash.com/photo-1599351431202-1e0f0137899a?auto=format&fit=crop&w=600&q=80',
-      is_active: true
-    },
-    {
-      id: 'srv-shave',
-      salon_id: environment.salonId,
-      category_id: 'cat-beard',
-      category_name: 'Beard',
-      name: 'Shave',
-      description: 'Traditional straight razor shave with essential pre-shave oils, hot towel infusion, and soothing balm.',
-      duration_minutes: 20,
-      price: 100,
-      image_url: 'https://images.unsplash.com/photo-1621605815971-fbc98d665033?auto=format&fit=crop&w=600&q=80',
-      is_active: true
-    },
-    {
-      id: 'srv-facial',
-      salon_id: environment.salonId,
-      category_id: 'cat-skin',
-      category_name: 'Skin',
-      name: 'Facial',
-      description: 'Complete dermal detox with enzymatic exfoliation, lymphatic drainage, and vitamin infusion.',
-      duration_minutes: 60,
-      price: 700,
-      image_url: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=600&q=80',
-      is_active: true
-    },
-    {
-      id: 'srv-cleanup',
-      salon_id: environment.salonId,
-      category_id: 'cat-skin',
-      category_name: 'Skin',
-      name: 'Cleanup',
-      description: 'Fast-action pore clarifying cleanse, gentle scrub exfoliation, and cooling botanical mask.',
-      duration_minutes: 45,
-      price: 400,
-      image_url: 'https://images.unsplash.com/photo-1512290900672-1f41e57c6b96?auto=format&fit=crop&w=600&q=80',
-      is_active: true
-    }
-  ];
+  private readonly fallbackCategories: ServiceCategory[] = [];
+  private readonly fallbackServices: SalonService[] = [];
 
   /**
    * Fetches active services from Supabase.
