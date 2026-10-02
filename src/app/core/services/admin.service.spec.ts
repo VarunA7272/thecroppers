@@ -75,6 +75,70 @@ describe('AdminService (Staff vs Superadmin Strict Data Isolation)', () => {
       expect(newApt.customer.name).toBe('Test Walkin');
       expect(newApt.assignedStaff[0]?.id).toBe('staff-rahul');
     });
+
+    it('should allow superadmin to review, edit charges, and add/delete services on a booking', async () => {
+      const appointments = await service.getAppointments();
+      const target = appointments[0];
+      expect(target).toBeDefined();
+
+      const staffList = await service.getStaffMembers();
+      const updated = await service.reviewAndEditAppointment(target.id, {
+        services: [
+          {
+            id: 'srv-haircut',
+            name: 'Haircut',
+            durationMinutes: 30,
+            price: 200,
+            categoryName: 'Hair'
+          },
+          {
+            id: 'srv-beard-trim',
+            name: 'Beard Trim',
+            durationMinutes: 15,
+            price: 100,
+            categoryName: 'Beard'
+          }
+        ],
+        finalPrice: 250, // Custom discounted charge
+        priceAdjustmentNote: 'Special Combo Discount -₹50',
+        assignedStaff: [staffList[0]],
+        approveNow: true
+      });
+
+      expect(updated).toBeDefined();
+      expect(updated?.services?.length).toBe(2);
+      expect(updated?.totalPrice).toBe(250);
+      expect(updated?.customPriceNote).toBe('Special Combo Discount -₹50');
+      expect(updated?.ownerApprovalStatus).toBe('approved');
+    });
+
+    it('should allow superadmin to approve an individual booking or use Approve All for the day', async () => {
+      const today = new Date().toISOString().split('T')[0];
+      // Create a pending booking
+      await service.login('rahul@thecroppers.in', 'password123', 'staff', 'staff-rahul');
+      const pendingBooking = await service.createManualAppointment({
+        customerName: 'Pending Client',
+        customerPhone: '9826333444',
+        serviceId: 'srv-haircut',
+        date: today,
+        startTime: '11:00'
+      });
+      expect(pendingBooking.ownerApprovalStatus).toBe('pending');
+
+      // Superadmin reviews and approves
+      await service.login('admin@thecroppers.in', 'password123', 'superadmin');
+      const approveRes = await service.approveAppointment(pendingBooking.id);
+      expect(approveRes).toBe(true);
+
+      const refreshed = await service.getAppointments();
+      const checked = refreshed.find(a => a.id === pendingBooking.id);
+      expect(checked?.ownerApprovalStatus).toBe('approved');
+
+      // Test Approve All
+      const approveAllResult = await service.approveAllAppointmentsForDate(today);
+      expect(approveAllResult).toBeDefined();
+      expect(typeof approveAllResult.count).toBe('number');
+    });
   });
 
   describe('Staff Data Isolation (Rahul)', () => {
@@ -129,23 +193,31 @@ describe('AdminService (Staff vs Superadmin Strict Data Isolation)', () => {
       expect(unassignedSuccess).toBe(false);
     });
 
-    it('should reject staff attempts to assign staff or create walk-in bookings', async () => {
+    it('should reject staff attempts to assign staff, but allow staff to book walk-in/phone clients marked for owner review', async () => {
       const staffList = await service.getStaffMembers();
       const amit = staffList.find(s => s.id === 'staff-amit')!;
 
+      // Assigning staff must still be strictly rejected for staff
       const assignRes = await service.assignStaff('apt-101', amit);
       expect(assignRes.success).toBe(false);
       expect(assignRes.error).toContain('Unauthorized');
 
-      await expect(
-        service.createManualAppointment({
-          customerName: 'Illegal Walkin',
-          customerPhone: '9826111111',
-          serviceId: 'srv-haircut',
-          date: '2026-09-30',
-          startTime: '10:00'
-        })
-      ).rejects.toThrow('Unauthorized');
+      // Staff CAN create phone call or walk-in booking, tagged as pending owner review
+      const staffBooking = await service.createManualAppointment({
+        customerName: 'Kavita Joshi',
+        customerPhone: '9826111111',
+        serviceId: 'srv-haircut',
+        date: '2026-09-30',
+        startTime: '10:00',
+        bookingSource: 'phone_call'
+      });
+
+      expect(staffBooking).toBeDefined();
+      expect(staffBooking.customer.name).toBe('Kavita Joshi');
+      expect(staffBooking.bookingSource).toBe('phone_call');
+      expect(staffBooking.ownerApprovalStatus).toBe('pending');
+      expect(staffBooking.bookedByStaffId).toBe('staff-rahul');
+      expect(staffBooking.assignedStaff.some(s => s.id === 'staff-rahul')).toBe(true);
     });
   });
 

@@ -8,10 +8,12 @@ import {
   UpdateStaffPayload,
   AdminAppointment,
   CreateManualAppointmentPayload,
+  ReviewAndEditAppointmentPayload,
   UpdateAppointmentPayload,
   AppointmentFilter,
   CreateServicePayload,
-  UpdateServicePayload
+  UpdateServicePayload,
+  AppointmentServiceItem
 } from '../models/admin.model';
 import { SalonService } from '../models/service.model';
 import { SalonOpeningHour, Salon } from '../models/salon.model';
@@ -172,6 +174,19 @@ export class AdminService {
         price: 200,
         categoryName: 'Hair'
       },
+      services: [
+        {
+          id: 'srv-haircut',
+          name: 'Haircut',
+          durationMinutes: 30,
+          price: 200,
+          categoryName: 'Hair'
+        }
+      ],
+      totalPrice: 200,
+      bookingSource: 'walk_in',
+      bookedByStaffName: 'Rahul (Staff)',
+      ownerApprovalStatus: 'pending',
       assignedStaff: [], // Unassigned - needs superadmin assignment
       createdAt: new Date().toISOString()
     },
@@ -194,6 +209,20 @@ export class AdminService {
         price: 800,
         categoryName: 'Hair'
       },
+      services: [
+        {
+          id: 'srv-hair-colour',
+          name: 'Hair Colour',
+          durationMinutes: 90,
+          price: 800,
+          categoryName: 'Hair'
+        }
+      ],
+      totalPrice: 800,
+      bookingSource: 'phone_call',
+      bookedByStaffName: 'Rahul (Staff)',
+      ownerApprovalStatus: 'approved',
+      ownerReviewedAt: new Date().toISOString(),
       assignedStaff: [this.staffStore()[0]], // Assigned to Rahul
       createdAt: new Date().toISOString()
     },
@@ -216,6 +245,19 @@ export class AdminService {
         price: 100,
         categoryName: 'Beard'
       },
+      services: [
+        {
+          id: 'srv-shave',
+          name: 'Shave',
+          durationMinutes: 20,
+          price: 100,
+          categoryName: 'Beard'
+        }
+      ],
+      totalPrice: 100,
+      bookingSource: 'walk_in',
+      bookedByStaffName: 'Amit (Staff)',
+      ownerApprovalStatus: 'pending',
       assignedStaff: [], // Unassigned - needs superadmin assignment
       createdAt: new Date().toISOString()
     },
@@ -238,6 +280,20 @@ export class AdminService {
         price: 700,
         categoryName: 'Skin'
       },
+      services: [
+        {
+          id: 'srv-facial',
+          name: 'Facial',
+          durationMinutes: 60,
+          price: 700,
+          categoryName: 'Skin'
+        }
+      ],
+      totalPrice: 700,
+      bookingSource: 'online',
+      ownerApprovalStatus: 'approved',
+      statusChangedBy: 'Priya (Staff)',
+      ownerReviewedAt: new Date().toISOString(),
       assignedStaff: [this.staffStore()[2]], // Assigned to Priya
       createdAt: new Date().toISOString()
     },
@@ -260,6 +316,21 @@ export class AdminService {
         price: 200,
         categoryName: 'Hair'
       },
+      services: [
+        {
+          id: 'srv-haircut',
+          name: 'Haircut',
+          durationMinutes: 30,
+          price: 200,
+          categoryName: 'Hair'
+        }
+      ],
+      totalPrice: 200,
+      bookingSource: 'walk_in',
+      bookedByStaffName: 'Rahul (Staff)',
+      ownerApprovalStatus: 'approved',
+      statusChangedBy: 'Rahul (Staff)',
+      ownerReviewedAt: new Date().toISOString(),
       assignedStaff: [this.staffStore()[0]], // Assigned to Rahul
       createdAt: new Date().toISOString()
     },
@@ -282,6 +353,19 @@ export class AdminService {
         price: 100,
         categoryName: 'Beard'
       },
+      services: [
+        {
+          id: 'srv-beard-trim',
+          name: 'Beard Trim',
+          durationMinutes: 15,
+          price: 100,
+          categoryName: 'Beard'
+        }
+      ],
+      totalPrice: 100,
+      bookingSource: 'phone_call',
+      bookedByStaffName: 'Amit (Staff)',
+      ownerApprovalStatus: 'pending',
       assignedStaff: [this.staffStore()[1]], // Assigned to Amit
       createdAt: new Date().toISOString()
     },
@@ -304,6 +388,19 @@ export class AdminService {
         price: 400,
         categoryName: 'Skin'
       },
+      services: [
+        {
+          id: 'srv-cleanup',
+          name: 'Cleanup',
+          durationMinutes: 45,
+          price: 400,
+          categoryName: 'Skin'
+        }
+      ],
+      totalPrice: 400,
+      bookingSource: 'online',
+      ownerApprovalStatus: 'approved',
+      ownerReviewedAt: new Date().toISOString(),
       assignedStaff: [this.staffStore()[2]], // Assigned to Priya
       createdAt: new Date().toISOString()
     },
@@ -326,6 +423,21 @@ export class AdminService {
         price: 100,
         categoryName: 'Beard'
       },
+      services: [
+        {
+          id: 'srv-shave',
+          name: 'Shave',
+          durationMinutes: 20,
+          price: 100,
+          categoryName: 'Beard'
+        }
+      ],
+      totalPrice: 100,
+      bookingSource: 'walk_in',
+      bookedByStaffName: 'Amit (Staff)',
+      ownerApprovalStatus: 'approved',
+      statusChangedBy: 'Amit (Staff)',
+      ownerReviewedAt: new Date().toISOString(),
       assignedStaff: [this.staffStore()[1]], // Assigned to Amit
       createdAt: new Date().toISOString()
     },
@@ -364,6 +476,10 @@ export class AdminService {
           categoryName: 'Beard'
         }
       ],
+      totalPrice: 300,
+      bookingSource: 'walk_in',
+      bookedByStaffName: 'Rahul (Staff)',
+      ownerApprovalStatus: 'pending',
       assignedStaff: [this.staffStore()[0], this.staffStore()[1]], // Multi-stylist: Rahul & Amit
       notes: 'Multi-service: Haircut by Rahul, Beard Trim by Amit',
       createdAt: new Date().toISOString()
@@ -793,25 +909,68 @@ export class AdminService {
   }
 
   async createManualAppointment(payload: CreateManualAppointmentPayload): Promise<AdminAppointment> {
-    if (!this.isSuperadmin()) {
-      throw new Error('Unauthorized: Only Superadmin can create manual walk-in appointments.');
-    }
+    // Both Superadmin and Staff can create Walk-in / Phone Client bookings!
+    let assignedStaffList: StaffMember[] = [];
+    let bookedByStaffId: string | undefined = undefined;
+    let bookedByStaffName = 'Owner (Superadmin)';
+    let ownerApprovalStatus: 'pending' | 'approved' = 'approved';
 
-    const service = this.servicesStore().find(s => s.id === payload.serviceId) || this.servicesStore()[0];
-    const assignedStaffList: StaffMember[] = [];
-
-    if (payload.staffId) {
-      const staffMember = this.staffStore().find(s => s.id === payload.staffId);
+    if (this.isStaff()) {
+      const staffId = this.currentStaffId();
+      const staffMember = this.staffStore().find(s => s.id === staffId);
       if (staffMember) {
         assignedStaffList.push(staffMember);
       }
+      bookedByStaffId = staffId;
+      bookedByStaffName = (this.currentUser()?.name || 'Staff') + ' (Staff)';
+      // Staff bookings require End-of-Day review by Owner
+      ownerApprovalStatus = 'pending';
+    } else {
+      // Superadmin can assign staff or leave unassigned
+      if (payload.staffId) {
+        const staffMember = this.staffStore().find(s => s.id === payload.staffId);
+        if (staffMember) {
+          assignedStaffList.push(staffMember);
+        }
+      }
     }
+
+    // Resolve service(s)
+    let serviceItems: AppointmentServiceItem[] = [];
+    if (payload.services && payload.services.length > 0) {
+      serviceItems = [...payload.services];
+    } else if (payload.serviceIds && payload.serviceIds.length > 0) {
+      serviceItems = payload.serviceIds.map(id => {
+        const s = this.servicesStore().find(srv => srv.id === id) || this.servicesStore()[0];
+        return {
+          id: s.id,
+          name: s.name,
+          durationMinutes: s.duration_minutes,
+          price: s.price,
+          categoryName: s.category_name
+        };
+      });
+    } else {
+      const s = this.servicesStore().find(srv => srv.id === payload.serviceId) || this.servicesStore()[0];
+      serviceItems = [{
+        id: s.id,
+        name: s.name,
+        durationMinutes: s.duration_minutes,
+        price: s.price,
+        categoryName: s.category_name
+      }];
+    }
+
+    const primaryService = serviceItems[0];
+    const totalDuration = serviceItems.reduce((acc, s) => acc + s.durationMinutes, 0);
+    const catalogPrice = serviceItems.reduce((acc, s) => acc + s.price, 0);
+    const totalPrice = payload.customPrice !== undefined ? payload.customPrice : catalogPrice;
 
     // Calculate end time
     const startParts = payload.startTime.split(':');
     const startHour = parseInt(startParts[0], 10);
     const startMin = parseInt(startParts[1] || '0', 10);
-    const totalMinutes = startHour * 60 + startMin + service.duration_minutes;
+    const totalMinutes = startHour * 60 + startMin + totalDuration;
     const endHour = Math.floor(totalMinutes / 60);
     const endMin = totalMinutes % 60;
     const endTime = `${String(endHour).padStart(2, '0')}:${String(endMin).padStart(2, '0')}:00`;
@@ -829,12 +988,18 @@ export class AdminService {
         phone: payload.customerPhone.trim()
       },
       service: {
-        id: service.id,
-        name: service.name,
-        durationMinutes: service.duration_minutes,
-        price: service.price,
-        categoryName: service.category_name
+        id: primaryService.id,
+        name: serviceItems.length > 1 ? serviceItems.map(s => s.name).join(' + ') : primaryService.name,
+        durationMinutes: totalDuration,
+        price: totalPrice,
+        categoryName: primaryService.categoryName
       },
+      services: serviceItems,
+      totalPrice: totalPrice,
+      bookingSource: payload.bookingSource || 'walk_in',
+      bookedByStaffId,
+      bookedByStaffName,
+      ownerApprovalStatus,
       assignedStaff: assignedStaffList,
       notes: payload.notes?.trim() || undefined,
       createdAt: new Date().toISOString()
@@ -960,6 +1125,9 @@ export class AdminService {
     }
 
     // Role check: If staff, ensure the appointment is assigned to them
+    let statusChangedBy = 'Superadmin (Owner)';
+    let ownerApprovalStatus: 'pending' | 'approved' = 'approved';
+
     if (this.isStaff()) {
       const myStaffId = this.currentStaffId();
       const isAssignedToMe = targetApt.assignedStaff.some(s => s.id === myStaffId);
@@ -967,6 +1135,9 @@ export class AdminService {
         console.warn(`[AdminService] Unauthorized status update attempt by staff ${myStaffId} on appointment ${appointmentId}`);
         return false;
       }
+      statusChangedBy = (this.currentUser()?.name || 'Staff') + ' (Staff)';
+      // Staff status change triggers pending Owner review at end of day!
+      ownerApprovalStatus = 'pending';
     }
 
     if (this.supabase.isReady && this.supabase.clientInstance) {
@@ -985,13 +1156,117 @@ export class AdminService {
         if (apt.id === appointmentId) {
           return {
             ...apt,
-            status
+            status,
+            statusChangedBy,
+            statusChangedAt: new Date().toISOString(),
+            ownerApprovalStatus
           };
         }
         return apt;
       })
     );
     return true;
+  }
+
+  // Owner End-of-Day Review: Approve an individual booking
+  async approveAppointment(appointmentId: string): Promise<boolean> {
+    if (!this.isSuperadmin()) {
+      throw new Error('Unauthorized: Only Superadmin can approve appointments.');
+    }
+    this.appointmentsStore.update(items =>
+      items.map(apt => {
+        if (apt.id === appointmentId) {
+          return {
+            ...apt,
+            ownerApprovalStatus: 'approved',
+            ownerReviewedAt: new Date().toISOString()
+          };
+        }
+        return apt;
+      })
+    );
+    return true;
+  }
+
+  // Owner End-of-Day Review: "Approve All" for a particular date
+  async approveAllAppointmentsForDate(date?: string): Promise<{ count: number }> {
+    if (!this.isSuperadmin()) {
+      throw new Error('Unauthorized: Only Superadmin can approve appointments.');
+    }
+    let approvedCount = 0;
+    this.appointmentsStore.update(items =>
+      items.map(apt => {
+        const matchesDate = !date || apt.date === date;
+        if (matchesDate && apt.ownerApprovalStatus !== 'approved') {
+          approvedCount++;
+          return {
+            ...apt,
+            ownerApprovalStatus: 'approved',
+            ownerReviewedAt: new Date().toISOString()
+          };
+        }
+        return apt;
+      })
+    );
+    return { count: approvedCount };
+  }
+
+  // Review & Edit a Booking: Change charges, add/delete services, assign stylists
+  async reviewAndEditAppointment(
+    appointmentId: string,
+    payload: ReviewAndEditAppointmentPayload
+  ): Promise<AdminAppointment | null> {
+    if (!this.isSuperadmin()) {
+      throw new Error('Unauthorized: Only Superadmin can review and edit booking charges/services.');
+    }
+
+    if (!payload.services || payload.services.length === 0) {
+      throw new Error('An appointment must have at least one service.');
+    }
+
+    let updated: AdminAppointment | null = null;
+    const services = [...payload.services];
+    const primaryService = services[0];
+    const totalDuration = services.reduce((acc, s) => acc + s.durationMinutes, 0);
+    const combinedName = services.length > 1 ? services.map(s => s.name).join(' + ') : primaryService.name;
+
+    this.appointmentsStore.update(items =>
+      items.map(apt => {
+        if (apt.id === appointmentId) {
+          // Recalculate end time based on combined duration
+          const startParts = apt.startTime.split(':');
+          const startHour = parseInt(startParts[0], 10);
+          const startMin = parseInt(startParts[1] || '0', 10);
+          const totalMinutes = startHour * 60 + startMin + totalDuration;
+          const endHour = Math.floor(totalMinutes / 60);
+          const endMin = totalMinutes % 60;
+          const endTime = `${String(endHour).padStart(2, '0')}:${String(endMin).padStart(2, '0')}:00`;
+
+          updated = {
+            ...apt,
+            endTime,
+            service: {
+              id: primaryService.id,
+              name: combinedName,
+              durationMinutes: totalDuration,
+              price: payload.finalPrice,
+              categoryName: primaryService.categoryName
+            },
+            services: [...services],
+            totalPrice: payload.finalPrice,
+            customPriceNote: payload.priceAdjustmentNote?.trim() || undefined,
+            assignedStaff: [...payload.assignedStaff],
+            notes: payload.notes !== undefined ? payload.notes : apt.notes,
+            ownerApprovalStatus: payload.approveNow ? 'approved' : (apt.ownerApprovalStatus || 'approved'),
+            ownerReviewedAt: payload.approveNow ? new Date().toISOString() : apt.ownerReviewedAt
+          };
+          return updated;
+        }
+        return apt;
+      })
+    );
+
+    return updated;
   }
 
   // --- SALON SETTINGS & HOURS (SUPERADMIN ONLY) ---

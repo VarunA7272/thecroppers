@@ -2,7 +2,7 @@ import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AdminService } from '../../../core/services/admin.service';
-import { AdminAppointment, StaffMember } from '../../../core/models/admin.model';
+import { AdminAppointment, StaffMember, AppointmentServiceItem } from '../../../core/models/admin.model';
 import { SalonService } from '../../../core/models/service.model';
 
 @Component({
@@ -15,30 +15,64 @@ import { SalonService } from '../../../core/models/service.model';
       <div class="page-title-row">
         <div>
           <span class="section-eyebrow">
-            {{ adminService.isSuperadmin() ? 'Appointment Dispatch' : 'Station Schedule' }}
+            {{ adminService.isSuperadmin() ? 'Appointment Dispatch & Owner Audit' : 'Station Schedule' }}
           </span>
           <h1 class="page-title">
             {{ adminService.isSuperadmin() ? 'Manage Appointments' : 'My Assigned Appointments' }}
           </h1>
           <p class="page-subtitle">
             {{ adminService.isSuperadmin() 
-              ? 'Superadmin View: Full assignment, walk-in creation, editing, and status management.' 
+              ? 'Superadmin View: Review day bookings & transactions, edit charges & services, assign stylists, and approve.' 
               : 'Staff View: Floor queue & status updating for your personal clients (Logged in: ' + currentStaffName() + ').' }}
           </p>
         </div>
 
-        <!-- Superadmin Action: Book Walk-in Client -->
-        @if (adminService.isSuperadmin()) {
-          <button type="button" class="btn btn-primary" (click)="openWalkinModal()">
-            + Book Walk-in / Phone Client
-          </button>
-        }
+        <!-- Action: Book Walk-in / Phone Client (Both Superadmin & Staff) -->
+        <button type="button" class="btn btn-primary" (click)="openWalkinModal()">
+          + Book Walk-in / Phone Client
+        </button>
       </div>
 
       <!-- Toast Feedback Message -->
       @if (actionFeedback(); as feedback) {
         <div class="croppers-alert alert-success">
           <span>✓ {{ feedback }}</span>
+        </div>
+      }
+
+      <!-- Owner End-of-Day Review & Reconciliation Banner (Superadmin Only) -->
+      @if (adminService.isSuperadmin()) {
+        <div class="croppers-card eod-review-card">
+          <div class="eod-review-info">
+            <div class="eod-title-row">
+              <span class="eod-icon">📋</span>
+              <h2 class="eod-title">End-of-Day Review & Audit</h2>
+              <span class="eod-pending-pill" [class.zero]="dayReviewStats().pendingReview === 0">
+                {{ dayReviewStats().pendingReview }} Pending Review
+              </span>
+            </div>
+            <div class="eod-stats-chips">
+              <span class="eod-stat-chip">Bookings: <strong>{{ dayReviewStats().totalBookings }}</strong></span>
+              <span>•</span>
+              <span class="eod-stat-chip">Walk-in/Phone: <strong>{{ dayReviewStats().walkinOrPhone }}</strong></span>
+              <span>•</span>
+              <span class="eod-stat-chip">Completed: <strong>{{ dayReviewStats().completed }}</strong></span>
+              <span>•</span>
+              <span class="eod-stat-chip">Total Revenue: <strong class="text-gold">₹{{ dayReviewStats().totalRevenue | number }}</strong></span>
+              <span>•</span>
+              <span class="eod-stat-chip">Approved: <strong class="text-success">{{ dayReviewStats().approvedCount }}</strong></span>
+            </div>
+          </div>
+
+          <div class="eod-actions">
+            <button 
+              type="button" 
+              class="btn btn-primary eod-approve-all-btn" 
+              [disabled]="dayReviewStats().pendingReview === 0"
+              (click)="approveAllForDay()">
+              ✓ Approve All ({{ dayReviewStats().pendingReview }} Pending)
+            </button>
+          </div>
         </div>
       }
 
@@ -179,89 +213,125 @@ import { SalonService } from '../../../core/models/service.model';
         <div class="appointments-grid">
           @for (apt of filteredAppointments(); track apt.id) {
             <div class="croppers-card appointment-card" [class.unassigned-card]="apt.assignedStaff.length === 0 && apt.status === 'booked'">
-              <!-- Card Header -->
-              <div class="apt-card-top">
-                <div class="apt-ref-group">
-                  <span class="ref-num">{{ apt.referenceNumber }}</span>
-                  <span class="apt-date">{{ apt.date }}</span>
-                </div>
-                <div class="apt-status-tag" [class]="'status-' + apt.status">
-                  {{ apt.status | uppercase }}
-                </div>
-              </div>
-
-              <!-- Main Content -->
-              <div class="apt-body">
-                <div class="time-block">
-                  <span class="time-range">{{ formatTime12(apt.startTime) }} – {{ formatTime12(apt.endTime) }}</span>
-                  <span class="time-duration">{{ apt.service.durationMinutes }} Minutes</span>
-                </div>
-
-                <div class="client-block">
-                  <h3 class="client-name">{{ apt.customer.name }}</h3>
-                  <a [href]="'tel:' + apt.customer.phone" class="client-phone">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
-                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-                    </svg>
-                    +91 {{ apt.customer.phone }}
-                  </a>
+              <!-- LINE 1: CLIENT NAME EMPHASIZED IN BOLD + STATUS & APPROVAL BADGES -->
+              <div class="apt-card-top-line">
+                <div class="client-name-box">
+                  <h2 class="client-name-bold">
+                    <strong>{{ apt.customer.name }}</strong>
+                  </h2>
+                  <div class="client-sub-meta">
+                    <a [href]="'tel:' + apt.customer.phone" class="client-phone">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13">
+                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                      </svg>
+                      +91 {{ apt.customer.phone }}
+                    </a>
+                    <span class="source-pill" [class.walkin]="apt.bookingSource === 'walk_in'" [class.phone]="apt.bookingSource === 'phone_call'" [class.online]="apt.bookingSource === 'online' || !apt.bookingSource">
+                      {{ apt.bookingSource === 'phone_call' ? '📞 Phone' : (apt.bookingSource === 'walk_in' ? '🚶 Walk-in' : '🌐 Online') }}
+                    </span>
+                    <span class="ref-num">{{ apt.referenceNumber }}</span>
+                  </div>
                 </div>
 
-                <div class="service-block">
-                  <span class="srv-label">Service:</span>
-                  <span class="srv-name">{{ apt.service.name }}</span>
-                  <span class="srv-price">₹{{ apt.service.price }}</span>
-                </div>
-
-                <!-- Staff Assignment Box (SUPERADMIN CAN ASSIGN, STAFF CAN ONLY VIEW) -->
-                <div class="staff-assignment-box">
-                  <span class="assignment-label">Assigned Stylist{{ apt.assignedStaff.length > 1 ? 's' : '' }}:</span>
-                  @if (apt.assignedStaff.length > 0) {
-                    <div class="assigned-staff-info">
-                      <div class="staff-badge">
-                        <span class="stylist-icon">✂</span>
-                        <strong>
-                          @if (adminService.isStaff()) {
-                            @if (apt.assignedStaff.length === 1) {
-                              Assigned to You
-                            } @else {
-                              Assigned to You & {{ getOtherStylists(apt.assignedStaff) }}
-                            }
-                          } @else {
-                            {{ getStylistNames(apt.assignedStaff) }}
-                          }
-                        </strong>
-                      </div>
-                      
-                      @if (adminService.isSuperadmin()) {
-                        <button 
-                          type="button" 
-                          class="btn btn-ghost btn-sm reassign-btn" 
-                          (click)="openAssignModal(apt)">
-                          Assign / Manage ({{ apt.assignedStaff.length }})
-                        </button>
-                      }
-                    </div>
+                <div class="apt-top-badges">
+                  <span class="apt-status-tag" [class]="'status-' + apt.status">
+                    {{ apt.status | uppercase }}
+                  </span>
+                  @if (apt.ownerApprovalStatus === 'approved') {
+                    <span class="owner-badge approved" title="Approved by Owner">✓ Approved</span>
                   } @else {
-                    <div class="unassigned-prompt">
-                      <span class="unassigned-warning-tag">⚠️ Unassigned</span>
-                      
-                      @if (adminService.isSuperadmin()) {
-                        <button 
-                          type="button" 
-                          class="btn btn-primary btn-sm assign-cta-btn" 
-                          (click)="openAssignModal(apt)">
-                          Assign Stylist Now
-                        </button>
-                      } @else {
-                        <span class="staff-pending-note">Pending Superadmin Assignment</span>
-                      }
-                    </div>
+                    <span class="owner-badge pending" title="Pending Owner Review">⏳ Review Pending</span>
                   }
                 </div>
               </div>
 
-              <!-- Action Bar for Status Transitions & Superadmin Edit/Delete -->
+              <!-- LINE 2: TIME RANGE & DATE -->
+              <div class="apt-time-row">
+                <div class="time-block">
+                  <span class="time-range">{{ formatTime12(apt.startTime) }} – {{ formatTime12(apt.endTime) }}</span>
+                  <span class="apt-date">{{ apt.date }}</span>
+                </div>
+                <span class="time-duration">{{ apt.service.durationMinutes }}m duration</span>
+              </div>
+
+              <!-- LINE 3: SERVICES LIST & CHARGES BREAKDOWN -->
+              <div class="apt-services-charges-section">
+                <div class="services-list-strip">
+                  @for (srv of (apt.services && apt.services.length > 0 ? apt.services : [apt.service]); track srv.id) {
+                    <span class="service-pill-item">
+                      <span class="srv-pill-name">{{ srv.name }}</span>
+                      <span class="srv-pill-price">₹{{ srv.price }}</span>
+                    </span>
+                  }
+                </div>
+                <div class="charges-summary-row">
+                  <span class="charges-label">Total Charges:</span>
+                  <span class="charges-amount">₹{{ apt.totalPrice || apt.service.price }}</span>
+                  @if (apt.customPriceNote) {
+                    <span class="charges-note">• {{ apt.customPriceNote }}</span>
+                  }
+                </div>
+              </div>
+
+              <!-- LINE 4: STYLIST ASSIGNMENT & AUDIT LOG -->
+              <div class="staff-assignment-box">
+                <div class="staff-assignment-header">
+                  <span class="assignment-label">Stylist{{ apt.assignedStaff.length > 1 ? 's' : '' }}:</span>
+                  @if (apt.bookedByStaffName) {
+                    <span class="audit-sub">Booked by: {{ apt.bookedByStaffName }}</span>
+                  }
+                </div>
+
+                @if (apt.assignedStaff.length > 0) {
+                  <div class="assigned-staff-info">
+                    <div class="staff-badge">
+                      <span class="stylist-icon">✂</span>
+                      <strong>
+                        @if (adminService.isStaff()) {
+                          @if (apt.assignedStaff.length === 1) {
+                            Assigned to You
+                          } @else {
+                            Assigned to You & {{ getOtherStylists(apt.assignedStaff) }}
+                          }
+                        } @else {
+                          {{ getStylistNames(apt.assignedStaff) }}
+                        }
+                      </strong>
+                    </div>
+
+                    @if (adminService.isSuperadmin()) {
+                      <button 
+                        type="button" 
+                        class="btn btn-ghost btn-sm reassign-btn" 
+                        (click)="openReviewModal(apt)">
+                        Manage Stylists & Charges ({{ apt.assignedStaff.length }})
+                      </button>
+                    }
+                  </div>
+                } @else {
+                  <div class="unassigned-prompt">
+                    <span class="unassigned-warning-tag">⚠️ Unassigned</span>
+                    @if (adminService.isSuperadmin()) {
+                      <button 
+                        type="button" 
+                        class="btn btn-primary btn-sm assign-cta-btn" 
+                        (click)="openReviewModal(apt)">
+                        Assign Stylist Now
+                      </button>
+                    } @else {
+                      <span class="staff-pending-note">Pending Superadmin Assignment</span>
+                    }
+                  </div>
+                }
+
+                @if (apt.statusChangedBy) {
+                  <div class="audit-status-line">
+                    Status changed by: <strong>{{ apt.statusChangedBy }}</strong>
+                  </div>
+                }
+              </div>
+
+              <!-- LINE 5: ACTION BAR (STATUS BUTTONS + OWNER REVIEW CONTROLS) -->
               <div class="apt-actions-row">
                 <div class="action-buttons-group">
                   @if (apt.status === 'booked') {
@@ -297,13 +367,30 @@ import { SalonService } from '../../../core/models/service.model';
                   }
                 </div>
 
-                <!-- Superadmin Edit & Delete Actions -->
+                <!-- Superadmin Edit & Owner Approval Actions -->
                 @if (adminService.isSuperadmin()) {
                   <div class="superadmin-card-actions">
-                    <button type="button" class="action-icon-btn edit-icon" title="Edit Appointment" (click)="openEditModal(apt)">
+                    @if (apt.ownerApprovalStatus === 'pending') {
+                      <button 
+                        type="button" 
+                        class="btn btn-sm btn-outline approve-quick-btn" 
+                        title="Approve this booking" 
+                        (click)="approveBooking(apt)">
+                        ✓ Approve
+                      </button>
+                    }
+                    <button 
+                      type="button" 
+                      class="action-icon-btn edit-icon" 
+                      title="Review & Edit Charges / Services" 
+                      (click)="openReviewModal(apt)">
                       ✎
                     </button>
-                    <button type="button" class="action-icon-btn delete-icon" title="Delete Booking" (click)="confirmDelete(apt)">
+                    <button 
+                      type="button" 
+                      class="action-icon-btn delete-icon" 
+                      title="Delete Booking" 
+                      (click)="confirmDelete(apt)">
                       🗑
                     </button>
                   </div>
@@ -314,70 +401,151 @@ import { SalonService } from '../../../core/models/service.model';
         </div>
       }
 
-      <!-- 1. STYLIST ASSIGNMENT MODAL (SUPERADMIN ONLY - MULTI-STYLIST SUPPORT) -->
-      @if (activeModalAppointment(); as modalApt) {
-        <div class="modal-backdrop" (click)="closeAssignModal()">
-          <div class="croppers-card modal-card" (click)="$event.stopPropagation()">
+      <!-- 1. REVIEW, CHARGES & SERVICES MODAL (SUPERADMIN ONLY) -->
+      @if (reviewingAppointment(); as apt) {
+        <div class="modal-backdrop" (click)="closeReviewModal()">
+          <div class="croppers-card modal-card review-modal-card" (click)="$event.stopPropagation()">
             <div class="modal-header">
-              <h3 class="modal-title">Assign Stylists (Superadmin)</h3>
-              <button type="button" class="close-modal-btn" (click)="closeAssignModal()">✕</button>
+              <div>
+                <h3 class="modal-title">Review & Edit Booking</h3>
+                <span class="modal-sub-ref">{{ apt.referenceNumber }} • Guest: <strong>{{ apt.customer.name }}</strong></span>
+              </div>
+              <button type="button" class="close-modal-btn" (click)="closeReviewModal()">✕</button>
             </div>
 
-            <div class="modal-apt-summary">
-              <div class="summary-line">
-                <span class="lbl">Guest:</span> <strong>{{ modalApt.customer.name }}</strong>
+            <div class="review-modal-body">
+              <!-- Customer Summary -->
+              <div class="review-section-box">
+                <span class="review-section-heading">Customer Information</span>
+                <div class="review-cust-row">
+                  <span><strong>{{ apt.customer.name }}</strong></span>
+                  <span>+91 {{ apt.customer.phone }}</span>
+                  <span class="source-pill" [class.walkin]="apt.bookingSource === 'walk_in'" [class.phone]="apt.bookingSource === 'phone_call'">
+                    {{ apt.bookingSource === 'phone_call' ? '📞 Phone Booking' : (apt.bookingSource === 'walk_in' ? '🚶 Walk-in' : '🌐 Online') }}
+                  </span>
+                </div>
               </div>
-              <div class="summary-line">
-                <span class="lbl">Service:</span> {{ modalApt.service.name }} ({{ modalApt.service.durationMinutes }}m)
-              </div>
-              <div class="summary-line">
-                <span class="lbl">Slot:</span> {{ formatTime12(modalApt.startTime) }} – {{ formatTime12(modalApt.endTime) }}
-              </div>
-            </div>
 
-            <p class="modal-instruction">
-              Select 1 or more stylists for this customer's services (e.g. combo bookings):
-            </p>
+              <!-- Services Breakdown: Add & Delete Services -->
+              <div class="review-section-box">
+                <div class="review-section-header-flex">
+                  <span class="review-section-heading">Services in this Booking</span>
+                  <span class="review-duration-tag">{{ reviewTotalDuration() }}m duration</span>
+                </div>
 
-            <div class="staff-options-list">
-              @for (staff of staffList(); track staff.id) {
-                <div 
-                  class="staff-option-card" 
-                  [class.current]="isStaffSelectedInModal(staff.id)"
-                  (click)="toggleStaffInModal(staff)">
-                  <div class="staff-option-avatar">{{ staff.name.charAt(0) }}</div>
-                  <div class="staff-option-info">
-                    <span class="name">{{ staff.name }}</span>
-                    <span class="role">{{ staff.role }} • {{ staff.specialization | uppercase }}</span>
-                  </div>
+                <div class="review-services-list">
+                  @for (srv of reviewServices(); track $index) {
+                    <div class="review-srv-row">
+                      <div class="srv-row-info">
+                        <strong class="srv-row-name">{{ srv.name }}</strong>
+                        <span class="srv-meta">{{ srv.durationMinutes }}m • Standard: ₹{{ srv.price }}</span>
+                      </div>
+                      <button 
+                        type="button" 
+                        class="btn-remove-srv" 
+                        title="Remove service"
+                        [disabled]="reviewServices().length <= 1"
+                        (click)="removeServiceFromReview($index)">
+                        ✕ Remove
+                      </button>
+                    </div>
+                  }
+                </div>
+
+                <!-- Add Service Row -->
+                <div class="add-service-input-row">
+                  <select #serviceToAddSelect class="form-control select-add-srv">
+                    @for (catSrv of servicesList(); track catSrv.id) {
+                      <option [value]="catSrv.id">{{ catSrv.name }} ({{ catSrv.duration_minutes }}m — ₹{{ catSrv.price }})</option>
+                    }
+                  </select>
                   <button 
                     type="button" 
-                    class="btn btn-sm"
-                    [class.btn-primary]="isStaffSelectedInModal(staff.id)"
-                    [class.btn-outline]="!isStaffSelectedInModal(staff.id)">
-                    {{ isStaffSelectedInModal(staff.id) ? '✓ Assigned' : '+ Add' }}
+                    class="btn btn-outline btn-sm add-srv-btn" 
+                    (click)="addServiceToReview(serviceToAddSelect.value)">
+                    + Add Service
                   </button>
                 </div>
-              }
+              </div>
+
+              <!-- Charges & Pricing Override -->
+              <div class="review-section-box charges-edit-box">
+                <span class="review-section-heading">Pricing & Charges</span>
+                <div class="charges-edit-grid">
+                  <div class="form-group">
+                    <label class="form-label">Final Amount / Charges (₹) *</label>
+                    <input 
+                      type="number" 
+                      class="form-control price-edit-input" 
+                      [value]="reviewFinalPrice()" 
+                      (input)="onFinalPriceChange($event)"
+                      min="0">
+                    <span class="field-hint">Catalog total is ₹{{ reviewCatalogPrice() }}. Edit charges or apply discounts here.</span>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Price Adjustment Reason / Note (Optional)</label>
+                    <input 
+                      type="text" 
+                      class="form-control" 
+                      placeholder="e.g. Combo Discount, VIP Courtesy, Extra Styling"
+                      [value]="reviewPriceNote()" 
+                      (input)="onPriceNoteChange($event)">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Assign / Manage Stylists -->
+              <div class="review-section-box">
+                <span class="review-section-heading">Assigned Stylists</span>
+                <div class="staff-options-list">
+                  @for (staff of staffList(); track staff.id) {
+                    <div 
+                      class="staff-option-card" 
+                      [class.current]="isStaffSelectedInReview(staff.id)"
+                      (click)="toggleStaffInReview(staff)">
+                      <div class="staff-option-avatar">{{ staff.name.charAt(0) }}</div>
+                      <div class="staff-option-info">
+                        <span class="name">{{ staff.name }}</span>
+                        <span class="role">{{ staff.role }}</span>
+                      </div>
+                      <button 
+                        type="button" 
+                        class="btn btn-sm"
+                        [class.btn-primary]="isStaffSelectedInReview(staff.id)"
+                        [class.btn-outline]="!isStaffSelectedInReview(staff.id)">
+                        {{ isStaffSelectedInReview(staff.id) ? '✓ Assigned' : '+ Add' }}
+                      </button>
+                    </div>
+                  }
+                </div>
+              </div>
+
+              <!-- Owner Approval Checkbox -->
+              <div class="approval-toggle-box">
+                <label class="approval-toggle-label">
+                  <input 
+                    type="checkbox" 
+                    [checked]="reviewApproveNow()" 
+                    (change)="toggleApproveNow($event)">
+                  <span><strong>Mark Approved by Owner</strong> (Sets End-of-Day status to Approved)</span>
+                </label>
+              </div>
             </div>
 
             <div class="modal-footer modal-actions-row">
-              <button type="button" class="btn btn-ghost" (click)="closeAssignModal()">
-                Cancel
-              </button>
+              <button type="button" class="btn btn-ghost" (click)="closeReviewModal()">Cancel</button>
               <button 
                 type="button" 
                 class="btn btn-primary" 
-                [disabled]="selectedStaffInModal().length === 0"
-                (click)="saveAssignments(modalApt)">
-                Save Assignments ({{ selectedStaffInModal().length }} Stylist{{ selectedStaffInModal().length === 1 ? '' : 's' }})
+                (click)="saveReviewedAppointment(apt)">
+                Save Changes & Updates
               </button>
             </div>
           </div>
         </div>
       }
 
-      <!-- 2. BOOK WALK-IN / PHONE CLIENT MODAL (SUPERADMIN ONLY) -->
+      <!-- 2. BOOK WALK-IN / PHONE CLIENT MODAL (SUPERADMIN & STAFF) -->
       @if (isWalkinModalOpen()) {
         <div class="modal-backdrop" (click)="closeWalkinModal()">
           <div class="croppers-card modal-card" (click)="$event.stopPropagation()">
@@ -387,6 +555,18 @@ import { SalonService } from '../../../core/models/service.model';
             </div>
 
             <form [formGroup]="walkinForm" (ngSubmit)="saveWalkinBooking()" class="walkin-form">
+              <!-- Booking Type Toggle -->
+              <div class="booking-type-toggle">
+                <label class="radio-label">
+                  <input type="radio" formControlName="bookingSource" value="walk_in">
+                  <span>🚶 Walk-in Guest</span>
+                </label>
+                <label class="radio-label">
+                  <input type="radio" formControlName="bookingSource" value="phone_call">
+                  <span>📞 Phone Call Booking</span>
+                </label>
+              </div>
+
               <div class="form-group">
                 <label class="form-label">Guest Full Name *</label>
                 <input type="text" formControlName="customerName" class="form-control" placeholder="e.g. Ramesh Patel">
@@ -431,15 +611,23 @@ import { SalonService } from '../../../core/models/service.model';
                 </div>
               </div>
 
-              <div class="form-group">
-                <label class="form-label">Assign Stylist (Optional)</label>
-                <select formControlName="staffId" class="form-control">
-                  <option value="">Leave Unassigned (Assign Later)</option>
-                  @for (st of staffList(); track st.id) {
-                    <option [value]="st.id">{{ st.name }} ({{ st.role }})</option>
-                  }
-                </select>
-              </div>
+              <!-- Stylist Assignment -->
+              @if (adminService.isSuperadmin()) {
+                <div class="form-group">
+                  <label class="form-label">Assign Stylist (Optional)</label>
+                  <select formControlName="staffId" class="form-control">
+                    <option value="">Leave Unassigned (Assign Later)</option>
+                    @for (st of staffList(); track st.id) {
+                      <option [value]="st.id">{{ st.name }} ({{ st.role }})</option>
+                    }
+                  </select>
+                </div>
+              } @else {
+                <div class="staff-assignment-notice">
+                  <span>Assigned to your station: <strong>{{ currentStaffName() }}</strong></span>
+                  <span class="notice-sub">This client will be tagged as Walk-in/Phone and submitted for Owner's review.</span>
+                </div>
+              }
 
               <div class="modal-footer">
                 <button type="button" class="btn btn-ghost" (click)="closeWalkinModal()">Cancel</button>
@@ -452,58 +640,7 @@ import { SalonService } from '../../../core/models/service.model';
         </div>
       }
 
-      <!-- 3. EDIT APPOINTMENT MODAL (SUPERADMIN ONLY) -->
-      @if (editingAppointment(); as apt) {
-        <div class="modal-backdrop" (click)="closeEditModal()">
-          <div class="croppers-card modal-card" (click)="$event.stopPropagation()">
-            <div class="modal-header">
-              <h3 class="modal-title">Edit Appointment ({{ apt.referenceNumber }})</h3>
-              <button type="button" class="close-modal-btn" (click)="closeEditModal()">✕</button>
-            </div>
-
-            <form [formGroup]="editForm" (ngSubmit)="saveEditedAppointment(apt)" class="edit-form">
-              <div class="form-group">
-                <label class="form-label">Guest Name</label>
-                <input type="text" formControlName="customerName" class="form-control">
-              </div>
-
-              <div class="form-group">
-                <label class="form-label">Phone</label>
-                <input type="tel" formControlName="customerPhone" class="form-control">
-              </div>
-
-              <div class="form-group">
-                <label class="form-label">Service</label>
-                <select formControlName="serviceId" class="form-control">
-                  @for (srv of servicesList(); track srv.id) {
-                    <option [value]="srv.id">{{ srv.name }} (₹{{ srv.price }})</option>
-                  }
-                </select>
-              </div>
-
-              <div class="form-row">
-                <div class="form-group col-half">
-                  <label class="form-label">Date</label>
-                  <input type="date" formControlName="date" class="form-control">
-                </div>
-                <div class="form-group col-half">
-                  <label class="form-label">Start Time</label>
-                  <input type="time" formControlName="startTime" class="form-control">
-                </div>
-              </div>
-
-              <div class="modal-footer">
-                <button type="button" class="btn btn-ghost" (click)="closeEditModal()">Cancel</button>
-                <button type="submit" class="btn btn-primary" [disabled]="editForm.invalid">
-                  Save Changes
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      }
-
-      <!-- 4. DELETE CONFIRMATION MODAL (SUPERADMIN ONLY) -->
+      <!-- 3. DELETE CONFIRMATION MODAL (SUPERADMIN ONLY) -->
       @if (deletingAppointment(); as aptToDelete) {
         <div class="modal-backdrop" (click)="cancelDelete()">
           <div class="croppers-card modal-card" (click)="$event.stopPropagation()">
@@ -550,28 +687,36 @@ export class AdminAppointmentsComponent implements OnInit {
     return this.currentStaffMember()?.name || this.adminService.currentUser()?.name || 'Stylist';
   });
 
-  readonly activeModalAppointment = signal<AdminAppointment | null>(null);
-  readonly selectedStaffInModal = signal<StaffMember[]>([]);
+  // Review & Edit Modal state (Requirement 2)
+  readonly reviewingAppointment = signal<AdminAppointment | null>(null);
+  readonly reviewServices = signal<AppointmentServiceItem[]>([]);
+  readonly reviewFinalPrice = signal<number>(0);
+  readonly reviewPriceNote = signal<string>('');
+  readonly reviewAssignedStaff = signal<StaffMember[]>([]);
+  readonly reviewApproveNow = signal<boolean>(true);
+
+  readonly reviewTotalDuration = computed(() =>
+    this.reviewServices().reduce((sum, s) => sum + s.durationMinutes, 0)
+  );
+
+  readonly reviewCatalogPrice = computed(() =>
+    this.reviewServices().reduce((sum, s) => sum + s.price, 0)
+  );
+
+  // Walk-in modal state
   readonly isWalkinModalOpen = signal<boolean>(false);
-  readonly editingAppointment = signal<AdminAppointment | null>(null);
   readonly deletingAppointment = signal<AdminAppointment | null>(null);
   readonly actionFeedback = signal<string | null>(null);
 
   walkinForm: FormGroup = this.fb.group({
+    bookingSource: ['walk_in', [Validators.required]],
     customerName: ['', [Validators.required, Validators.minLength(2)]],
     customerPhone: ['', [Validators.required, Validators.pattern(/^[6-9]\d{9}$/)]],
     serviceId: ['', [Validators.required]],
     date: [new Date().toISOString().split('T')[0], [Validators.required]],
     startTime: ['11:00', [Validators.required]],
-    staffId: ['']
-  });
-
-  editForm: FormGroup = this.fb.group({
-    customerName: ['', [Validators.required, Validators.minLength(2)]],
-    customerPhone: ['', [Validators.required]],
-    serviceId: ['', [Validators.required]],
-    date: ['', [Validators.required]],
-    startTime: ['', [Validators.required]]
+    staffId: [''],
+    notes: ['']
   });
 
   async ngOnInit(): Promise<void> {
@@ -629,6 +774,18 @@ export class AdminAppointmentsComponent implements OnInit {
     return list;
   });
 
+  // End-of-Day Review Stats (Requirement 1)
+  readonly dayReviewStats = computed(() => {
+    const list = this.filteredAppointments();
+    const totalBookings = list.length;
+    const completed = list.filter(a => a.status === 'completed').length;
+    const walkinOrPhone = list.filter(a => a.bookingSource === 'walk_in' || a.bookingSource === 'phone_call').length;
+    const pendingReview = list.filter(a => a.ownerApprovalStatus === 'pending').length;
+    const approvedCount = list.filter(a => a.ownerApprovalStatus === 'approved').length;
+    const totalRevenue = list.filter(a => a.status === 'completed').reduce((sum, a) => sum + (a.totalPrice || a.service.price || 0), 0);
+    return { totalBookings, completed, walkinOrPhone, pendingReview, approvedCount, totalRevenue };
+  });
+
   setDateMode(mode: 'today' | 'tomorrow' | 'all'): void {
     this.selectedDateMode.set(mode);
   }
@@ -661,41 +818,116 @@ export class AdminAppointmentsComponent implements OnInit {
     this.selectedStaffId.set('');
   }
 
-  // Stylist Assignment (Superadmin Only - Multi-Stylist Support)
-  openAssignModal(apt: AdminAppointment): void {
+  // Owner Review & Approval: Approve individual booking
+  async approveBooking(apt: AdminAppointment): Promise<void> {
     if (!this.adminService.isSuperadmin()) return;
-    this.activeModalAppointment.set(apt);
-    this.selectedStaffInModal.set([...apt.assignedStaff]);
-  }
-
-  closeAssignModal(): void {
-    this.activeModalAppointment.set(null);
-    this.selectedStaffInModal.set([]);
-  }
-
-  isStaffSelectedInModal(staffId: string): boolean {
-    return this.selectedStaffInModal().some(s => s.id === staffId);
-  }
-
-  toggleStaffInModal(staff: StaffMember): void {
-    const current = this.selectedStaffInModal();
-    if (current.some(s => s.id === staff.id)) {
-      this.selectedStaffInModal.set(current.filter(s => s.id !== staff.id));
-    } else {
-      this.selectedStaffInModal.set([...current, staff]);
+    const success = await this.adminService.approveAppointment(apt.id);
+    if (success) {
+      await this.refreshData();
+      this.showToast(`Approved booking ${apt.referenceNumber} for ${apt.customer.name}.`);
     }
   }
 
-  async saveAssignments(apt: AdminAppointment): Promise<void> {
-    const selected = this.selectedStaffInModal();
-    const res = await this.adminService.assignStaff(apt.id, selected);
-    if (res.success) {
-      await this.refreshData();
-      const names = selected.map(s => s.name).join(', ');
-      this.showToast(`Assigned ${names} to ${apt.customer.name}'s appointment.`);
-      this.closeAssignModal();
+  // Owner Review & Approval: "Approve All" for the day
+  async approveAllForDay(): Promise<void> {
+    if (!this.adminService.isSuperadmin()) return;
+    const activeDate = this.selectedDateMode() === 'today' ? this.getTodayIso() : (this.selectedDateMode() === 'tomorrow' ? this.getTomorrowIso() : undefined);
+    const res = await this.adminService.approveAllAppointmentsForDate(activeDate);
+    await this.refreshData();
+    this.showToast(`All ${res.count} pending bookings and transactions approved by Owner.`);
+  }
+
+  // Review & Edit Modal (Requirement 2)
+  openReviewModal(apt: AdminAppointment): void {
+    if (!this.adminService.isSuperadmin()) return;
+    const serviceList = apt.services && apt.services.length > 0
+      ? apt.services
+      : [{
+          id: apt.service.id,
+          name: apt.service.name,
+          durationMinutes: apt.service.durationMinutes,
+          price: apt.service.price,
+          categoryName: apt.service.categoryName
+        }];
+
+    this.reviewServices.set([...serviceList]);
+    this.reviewFinalPrice.set(apt.totalPrice !== undefined ? apt.totalPrice : apt.service.price);
+    this.reviewPriceNote.set(apt.customPriceNote || '');
+    this.reviewAssignedStaff.set([...apt.assignedStaff]);
+    this.reviewApproveNow.set(apt.ownerApprovalStatus === 'approved');
+    this.reviewingAppointment.set(apt);
+  }
+
+  closeReviewModal(): void {
+    this.reviewingAppointment.set(null);
+  }
+
+  removeServiceFromReview(index: number): void {
+    const current = this.reviewServices();
+    if (current.length <= 1) return; // Keep at least one service
+    const updated = current.filter((_, i) => i !== index);
+    this.reviewServices.set(updated);
+    this.reviewFinalPrice.set(updated.reduce((sum, s) => sum + s.price, 0));
+  }
+
+  addServiceToReview(serviceId: string): void {
+    const found = this.servicesList().find(s => s.id === serviceId);
+    if (!found) return;
+
+    const newItem: AppointmentServiceItem = {
+      id: found.id,
+      name: found.name,
+      durationMinutes: found.duration_minutes,
+      price: found.price,
+      categoryName: found.category_name
+    };
+
+    const updated = [...this.reviewServices(), newItem];
+    this.reviewServices.set(updated);
+    this.reviewFinalPrice.set(this.reviewFinalPrice() + found.price);
+  }
+
+  onFinalPriceChange(event: Event): void {
+    const val = parseFloat((event.target as HTMLInputElement).value);
+    this.reviewFinalPrice.set(isNaN(val) ? 0 : val);
+  }
+
+  onPriceNoteChange(event: Event): void {
+    const val = (event.target as HTMLInputElement).value;
+    this.reviewPriceNote.set(val);
+  }
+
+  isStaffSelectedInReview(staffId: string): boolean {
+    return this.reviewAssignedStaff().some(s => s.id === staffId);
+  }
+
+  toggleStaffInReview(staff: StaffMember): void {
+    const current = this.reviewAssignedStaff();
+    if (current.some(s => s.id === staff.id)) {
+      this.reviewAssignedStaff.set(current.filter(s => s.id !== staff.id));
     } else {
-      alert(res.error || 'Failed to assign staff.');
+      this.reviewAssignedStaff.set([...current, staff]);
+    }
+  }
+
+  toggleApproveNow(event: Event): void {
+    this.reviewApproveNow.set((event.target as HTMLInputElement).checked);
+  }
+
+  async saveReviewedAppointment(apt: AdminAppointment): Promise<void> {
+    if (!this.adminService.isSuperadmin()) return;
+    const res = await this.adminService.reviewAndEditAppointment(apt.id, {
+      services: this.reviewServices(),
+      finalPrice: this.reviewFinalPrice(),
+      priceAdjustmentNote: this.reviewPriceNote(),
+      assignedStaff: this.reviewAssignedStaff(),
+      approveNow: this.reviewApproveNow()
+    });
+
+    if (res) {
+      await this.refreshData();
+      this.showToast(`Updated charges, services & stylists for ${apt.customer.name}.`);
+      this.closeReviewModal();
     }
   }
 
@@ -710,10 +942,15 @@ export class AdminAppointmentsComponent implements OnInit {
     return others.map(s => s.name).join(', ');
   }
 
-  // Walk-in Booking (Superadmin Only)
+  // Walk-in / Phone Booking (Superadmin & Staff)
   openWalkinModal(): void {
-    if (!this.adminService.isSuperadmin()) return;
     this.isWalkinModalOpen.set(true);
+    if (this.adminService.isStaff()) {
+      const myStaffId = this.adminService.currentStaffId();
+      if (myStaffId) {
+        this.walkinForm.patchValue({ staffId: myStaffId });
+      }
+    }
   }
 
   closeWalkinModal(): void {
@@ -721,7 +958,6 @@ export class AdminAppointmentsComponent implements OnInit {
   }
 
   async saveWalkinBooking(): Promise<void> {
-    if (!this.adminService.isSuperadmin()) return;
     if (this.walkinForm.invalid) return;
 
     const val = this.walkinForm.value;
@@ -729,34 +965,6 @@ export class AdminAppointmentsComponent implements OnInit {
     await this.refreshData();
     this.showToast(`Created booking ${newApt.referenceNumber} for ${val.customerName}.`);
     this.closeWalkinModal();
-  }
-
-  // Edit Appointment (Superadmin Only)
-  openEditModal(apt: AdminAppointment): void {
-    if (!this.adminService.isSuperadmin()) return;
-    this.editingAppointment.set(apt);
-    this.editForm.patchValue({
-      customerName: apt.customer.name,
-      customerPhone: apt.customer.phone,
-      serviceId: apt.service.id,
-      date: apt.date,
-      startTime: apt.startTime.substring(0, 5)
-    });
-  }
-
-  closeEditModal(): void {
-    this.editingAppointment.set(null);
-  }
-
-  async saveEditedAppointment(apt: AdminAppointment): Promise<void> {
-    if (!this.adminService.isSuperadmin()) return;
-    if (this.editForm.invalid) return;
-
-    const val = this.editForm.value;
-    await this.adminService.updateAppointment(apt.id, val);
-    await this.refreshData();
-    this.showToast(`Updated appointment ${apt.referenceNumber}.`);
-    this.closeEditModal();
   }
 
   // Delete Appointment (Superadmin Only)

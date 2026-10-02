@@ -69,6 +69,15 @@ export interface AdminAppointment {
     categoryName?: string;
   };
   services?: AppointmentServiceItem[]; // Multi-service item breakdown
+  totalPrice?: number; // Total charges (sum of services or custom edited charges)
+  customPriceNote?: string; // e.g. "Special VIP rate", "Extra conditioning applied"
+  bookingSource?: 'online' | 'walk_in' | 'phone_call';
+  bookedByStaffId?: string;
+  bookedByStaffName?: string;
+  ownerApprovalStatus?: 'pending' | 'approved';
+  ownerReviewedAt?: string;
+  statusChangedBy?: string;
+  statusChangedAt?: string;
   assignedStaff: StaffMember[]; // Can contain multiple assigned stylists
   createdAt?: string;
   notes?: string;
@@ -77,11 +86,24 @@ export interface AdminAppointment {
 export interface CreateManualAppointmentPayload {
   customerName: string;
   customerPhone: string;
-  serviceId: string;
+  serviceId?: string;
+  serviceIds?: string[];
+  services?: AppointmentServiceItem[];
+  customPrice?: number;
   date: string;
   startTime: string;
-  staffId?: string; // Optional direct staff assignment (superadmin only)
+  staffId?: string; // Optional direct staff assignment
   notes?: string;
+  bookingSource?: 'walk_in' | 'phone_call' | 'online';
+}
+
+export interface ReviewAndEditAppointmentPayload {
+  services: AppointmentServiceItem[];
+  finalPrice: number;
+  priceAdjustmentNote?: string;
+  assignedStaff: StaffMember[];
+  notes?: string;
+  approveNow?: boolean;
 }
 
 export interface UpdateAppointmentPayload {
